@@ -200,7 +200,7 @@ namespace ConvenientText
 
                 bool shouldShow = _displayModel != null &&
                                   _displayModel.IsValid &&
-                                  _displayModel.IsFloatingButtonEnabled &&
+                                  _storage.GlobalFloatingButtonEnabled &&
                                   ConvenientTextComponent.LiveModels.ContainsKey(_displayModel.ComponentId) &&
                                   _displayModel.IsInTimeRange(_timeRangeService.NowTimeOfDay);
 

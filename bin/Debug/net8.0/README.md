@@ -1,4 +1,4 @@
-﻿# ClassIsland 便捷文本插件 1.2.1.0
+# ClassIsland 便捷文本插件 1.2.0.1
 
 ## 插件简介
 
@@ -31,7 +31,7 @@
 - 检测到U盘插入时，弹出温馨提醒：**"请注意黑板的推拉，以防止U盘和白板插口的损坏"**
 - 拯救每一根插在白板上的U盘
 
-<img title="" src="https://raw.githubusercontent.com/Tiny-Nick/ConvenientText/refs/heads/main/preview.png" alt="便捷文本插件预览" data-align="inline" style="zoom:50%;">便捷文本插件预览" data-align="inline" style="zoom:50%;">
+<img title="" src="file:///C:/Users/Programmer_Nick/OneDrive/图片/Typedown/0e0e58b8-61cd-4906-b45f-63041d1b88a7.png" alt="loading-ag-1401" data-align="inline" style="zoom:50%;">
 
 ## 兼容性
 

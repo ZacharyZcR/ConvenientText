@@ -28,6 +28,14 @@ using ConvenientText.Models;
 namespace ConvenientText.Services
 {
     /// <summary>
+    /// 全局设置模型（存放与单个组件无关的跨组件配置，如悬浮按钮全局开关）。
+    /// </summary>
+    public class GlobalSettings
+    {
+        public bool IsFloatingButtonEnabled { get; set; } = true;
+    }
+
+    /// <summary>
     /// 共享数据存储服务（在 Plugin.cs 里注册为单例）。
     /// 数据是一个字典：键 = 组件的 ComponentId，值 = 组件的设置模型。
     /// </summary>
@@ -36,8 +44,14 @@ namespace ConvenientText.Services
         /// <summary>data.json 的完整路径</summary>
         private readonly string _filePath;
 
+        /// <summary>global.json 的完整路径（全局设置，不属于任何单个组件）</summary>
+        private readonly string _globalSettingsPath;
+
         /// <summary>JSON 序列化配置（缩进格式 + 颜色转换器）</summary>
         private readonly JsonSerializerOptions _jsonOptions;
+
+        /// <summary>全局设置内存缓存</summary>
+        private GlobalSettings _globalSettings = new();
 
         /// <summary>
         /// 数据保存后触发，用于通知各窗口/组件刷新。
@@ -69,12 +83,58 @@ namespace ConvenientText.Services
             var pluginDir = Path.Combine(appData, "ClassIsland", "Plugins", "ConvenientText");
             Directory.CreateDirectory(pluginDir); // 目录不存在就创建（已存在则什么都不做）
             _filePath = Path.Combine(pluginDir, "data.json");
+            _globalSettingsPath = Path.Combine(pluginDir, "global.json");
 
             _jsonOptions = new JsonSerializerOptions
             {
                 WriteIndented = true,                              // 缩进格式，方便人眼查看
                 Converters = { new ColorJsonConverter() }          // 颜色存成 "#AARRGGBB" 字符串
             };
+
+            // 启动时加载全局设置
+            LoadGlobalSettings();
+        }
+
+        // ============================================================
+        //  全局设置读写（global.json，不属于任何组件）
+        // ============================================================
+
+        /// <summary>悬浮按钮全局开关</summary>
+        public bool GlobalFloatingButtonEnabled
+        {
+            get => _globalSettings.IsFloatingButtonEnabled;
+            set
+            {
+                if (_globalSettings.IsFloatingButtonEnabled == value) return;
+                _globalSettings.IsFloatingButtonEnabled = value;
+                SaveGlobalSettings();
+                try { DataChanged?.Invoke(this, EventArgs.Empty); } catch { }
+            }
+        }
+
+        /// <summary>从文件加载全局设置</summary>
+        private void LoadGlobalSettings()
+        {
+            try
+            {
+                if (File.Exists(_globalSettingsPath))
+                {
+                    var json = File.ReadAllText(_globalSettingsPath);
+                    _globalSettings = JsonSerializer.Deserialize<GlobalSettings>(json) ?? new GlobalSettings();
+                }
+            }
+            catch { _globalSettings = new GlobalSettings(); }
+        }
+
+        /// <summary>把全局设置写入文件</summary>
+        private void SaveGlobalSettings()
+        {
+            try
+            {
+                var json = JsonSerializer.Serialize(_globalSettings, _jsonOptions);
+                File.WriteAllText(_globalSettingsPath, json);
+            }
+            catch { }
         }
 
         // ============================================================

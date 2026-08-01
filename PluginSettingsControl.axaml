@@ -35,7 +35,7 @@
                            FontSize="26"
                            VerticalAlignment="Center" />
 				<StackPanel VerticalAlignment="Center">
-					<TextBlock Text="便捷文本 · 设置 TEST"
+					<TextBlock Text="便捷文本 · 设置"
                                FontWeight="Bold"
                                FontSize="20" />
 					<TextBlock Text="悬浮按钮快速改字 · 时间段控制 · U盘防断头提醒"
@@ -137,7 +137,7 @@
 						<TextBlock Text="🧩" FontSize="18" VerticalAlignment="Center" />
 						<StackPanel VerticalAlignment="Center">
 							<TextBlock Text="已添加的组件" FontWeight="SemiBold" FontSize="15" />
-							<TextBlock Text="点击组件进入详细设置；未加载的残留组件可点 ✕ 删除"
+							<TextBlock Text="点击组件进入详细设置；未加载的文本组件需要手动点击 ✕ 删除残留"
                                        FontSize="12"
                                        Foreground="{DynamicResource SystemControlDisabledChromeDisabledBrush}" />
 						</StackPanel>
@@ -237,6 +237,38 @@
                     Padding="16"
                     IsVisible="False">
 				<views:ComponentSettingsPanel x:Name="SettingsPanel" />
+			</Border>
+
+			<!-- ===== 卡片：悬浮按钮（全局控制） ===== -->
+			<Border CornerRadius="8"
+					Background="{DynamicResource CardBackgroundBrush}"
+					BorderBrush="{DynamicResource CardBorderBrush}"
+                    BorderThickness="1"
+                    Padding="16">
+				<Grid>
+					<Grid.ColumnDefinitions>
+						<ColumnDefinition Width="Auto" />
+						<ColumnDefinition Width="*" />
+						<ColumnDefinition Width="Auto" />
+					</Grid.ColumnDefinitions>
+					<TextBlock Text="✎"
+                               FontSize="18"
+                               VerticalAlignment="Center"
+                               Margin="0,0,10,0" />
+					<StackPanel Grid.Column="1" VerticalAlignment="Center">
+						<TextBlock Text="桌面悬浮按钮"
+                                   FontWeight="SemiBold"
+                                   FontSize="15" />
+						<TextBlock Text="全局开关，控制桌面悬浮编辑按钮的显示与隐藏"
+                                   FontSize="12"
+                                   Foreground="{DynamicResource SystemControlDisabledChromeDisabledBrush}" />
+					</StackPanel>
+					<ToggleSwitch x:Name="FloatingButtonToggle"
+                                  Grid.Column="2"
+                                  VerticalAlignment="Center"
+                                  OnContent="开"
+                                  OffContent="关" />
+				</Grid>
 			</Border>
 
 			<!-- ===== 卡片：U盘提醒 ===== -->

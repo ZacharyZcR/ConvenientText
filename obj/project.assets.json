@@ -6427,13 +6427,13 @@
     "C:\\Users\\Programmer_Nick\\.nuget\\packages\\": {}
   },
   "project": {
-    "version": "1.2.0",
+    "version": "1.2.1",
     "restore": {
-      "projectUniqueName": "C:\\Users\\Programmer_Nick\\OneDrive\\文档\\Visual Studio 18 项目文件\\ConvenientText\\ConvenientText.csproj",
+      "projectUniqueName": "C:\\Users\\Programmer_Nick\\OneDrive\\文档\\Visual Studio 18 项目文件\\ConvenientText - Openclaw\\ConvenientText.csproj",
       "projectName": "ConvenientText",
-      "projectPath": "C:\\Users\\Programmer_Nick\\OneDrive\\文档\\Visual Studio 18 项目文件\\ConvenientText\\ConvenientText.csproj",
+      "projectPath": "C:\\Users\\Programmer_Nick\\OneDrive\\文档\\Visual Studio 18 项目文件\\ConvenientText - Openclaw\\ConvenientText.csproj",
       "packagesPath": "C:\\Users\\Programmer_Nick\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\Programmer_Nick\\OneDrive\\文档\\Visual Studio 18 项目文件\\ConvenientText\\obj\\",
+      "outputPath": "C:\\Users\\Programmer_Nick\\OneDrive\\文档\\Visual Studio 18 项目文件\\ConvenientText - Openclaw\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\Programmer_Nick\\AppData\\Roaming\\NuGet\\NuGet.Config",

@@ -41,6 +41,13 @@ namespace ConvenientText.Views
         /// <summary>共享数据存储，拖动结束时保存新位置</summary>
         private readonly DataStorageService _storage;
 
+        /// <summary>当前打开的组件列表窗口（防重复打开）</summary>
+        private static ComponentListWindow? _openListWindow;
+        private static readonly object _listWindowLock = new();
+
+        /// <summary>悬浮按钮本体元素（圈内 ✎ 按钮），用于动态换色</summary>
+        private readonly AvaloniaButton _button;
+
         /// <summary>窗口句柄（Win32 置底操作用，仅 Windows 有效）</summary>
         private IntPtr _hwnd = IntPtr.Zero;
 
@@ -61,46 +68,60 @@ namespace ConvenientText.Views
             _dataModel = dataModel;
             _storage = storage;
 
-            // ----- 窗口基本形态：小而安静的桌面小部件 -----
-            Width = 56;
-            Height = 56;
-            CanResize = false;                 // 不可调大小
-            ShowInTaskbar = false;             // 不占任务栏
-            WindowStartupLocation = WindowStartupLocation.Manual; // 位置由我们自己定
-            Topmost = false;                   // 不置顶（要当桌面“贴纸”）
+            // ----- 窗口基本形态：外壳比按钮大一圈，方便拖动 -----
+            Width = 50;
+            Height = 50;
+            CanResize = false;
+            ShowInTaskbar = false;
+            WindowStartupLocation = WindowStartupLocation.Manual;
+            Topmost = false;
             Title = "";
 
-            // ----- 无边框 + 全透明：只露出中间的圆形按钮 -----
+            // ----- 无边框 + 亚克力模糊：按钮背后有磨砂玻璃效果 -----
             SystemDecorations = SystemDecorations.None;
-            TransparencyLevelHint = new[] { WindowTransparencyLevel.Transparent };
+            TransparencyLevelHint = new[] { WindowTransparencyLevel.AcrylicBlur };
             Background = AvaloniaBrushes.Transparent;
             ExtendClientAreaToDecorationsHint = true;
             ExtendClientAreaChromeHints = ExtendClientAreaChromeHints.NoChrome;
             ExtendClientAreaTitleBarHeightHint = 0;
 
-            // 初始位置取上次保存的坐标
             Position = new PixelPoint((int)_dataModel.FloatingX, (int)_dataModel.FloatingY);
 
             this.Loaded += OnLoaded!;
             this.Deactivated += OnDeactivated!;
 
-            // ----- 圆形 ✎ 按钮本体 -----
+            // ----- 新视觉：圆角小方标 + 铅笔图标 -----
+            // 不是圆点，是一个带圆角的小方块，像桌面上的迷你编辑标签
             var button = new AvaloniaButton
             {
-                Content = "✎",
-                FontSize = 18,
+                Content = "T", // ✏ 铅笔符号
+                FontSize = 13,
                 Background = new SolidColorBrush(AvaloniaColor.FromArgb(220, 68, 68, 68)),
                 Foreground = AvaloniaBrushes.White,
                 BorderThickness = new Thickness(0),
-                CornerRadius = new CornerRadius(20),
-                Width = 40,
-                Height = 40,
+                CornerRadius = new CornerRadius(6),
+                Width = 25,
+                Height = 25,
+                Padding = new Thickness(0),
                 HorizontalContentAlignment = Avalonia.Layout.HorizontalAlignment.Center,
                 VerticalContentAlignment = Avalonia.Layout.VerticalAlignment.Center,
                 Cursor = new AvaloniaCursor(StandardCursorType.Hand)
             };
+            _button = button;
+
+            // 亚克力磨砂底色：比按钮大一圈的半透明圆角方块，产生模糊效果
+            var backdrop = new Border
+            {
+                Width = 32,
+                Height = 32,
+                CornerRadius = new CornerRadius(8),
+                Background = new SolidColorBrush(AvaloniaColor.FromArgb(40, 255, 255, 255)),
+                HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
+                VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
+            };
 
             var grid = new Grid();
+            grid.Children.Add(backdrop);
             grid.Children.Add(button);
             button.HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center;
             button.VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center;
@@ -117,17 +138,73 @@ namespace ConvenientText.Views
         {
             bool sameComponent = _dataModel.ComponentId == newModel.ComponentId;
             _dataModel = newModel;
-            // 只有切换到另一个组件时才跳转位置；同一组件的数据刷新不动窗口
             if (!sameComponent)
+            {
                 Position = new PixelPoint((int)_dataModel.FloatingX, (int)_dataModel.FloatingY);
+                ClampPositionToScreen();
+            }
+        }
+
+        /// <summary>确保按钮位置不跑到屏幕外面去</summary>
+        private void ClampPositionToScreen()
+        {
+            try
+            {
+                var screens = this.Screens;
+                if (screens == null || screens.ScreenCount == 0) return;
+
+                double x = Position.X, y = Position.Y;
+                double w = Width, h = Height;
+
+                bool onAnyScreen = false;
+                for (int i = 0; i < screens.ScreenCount; i++)
+                {
+                    var bounds = screens.All[i].Bounds;
+                    if (x + w > bounds.X && x < bounds.X + bounds.Width &&
+                        y + h > bounds.Y && y < bounds.Y + bounds.Height)
+                    {
+                        onAnyScreen = true;
+                        if (x < bounds.X) x = bounds.X + 10;
+                        if (y < bounds.Y) y = bounds.Y + 10;
+                        if (x + w > bounds.X + bounds.Width) x = bounds.X + bounds.Width - w - 10;
+                        if (y + h > bounds.Y + bounds.Height) y = bounds.Y + bounds.Height - h - 10;
+                        break;
+                    }
+                }
+
+                if (!onAnyScreen && screens.ScreenCount > 0)
+                {
+                    var primary = screens.All[0].Bounds;
+                    x = primary.X + 20;
+                    y = primary.Y + 100;
+                }
+
+                Position = new PixelPoint((int)x, (int)y);
+            }
+            catch { }
         }
 
         private void OnButtonClick(object? sender, RoutedEventArgs e)
         {
             try
             {
-                var listWindow = new ComponentListWindow();
-                listWindow.Show();
+                lock (_listWindowLock)
+                {
+                    // 已有窗口开着 → 激活它，不新建
+                    if (_openListWindow != null && _openListWindow.IsVisible)
+                    {
+                        _openListWindow.Activate();
+                        return;
+                    }
+
+                    var listWindow = new ComponentListWindow();
+                    listWindow.Closed += (_, _) =>
+                    {
+                        lock (_listWindowLock) { _openListWindow = null; }
+                    };
+                    _openListWindow = listWindow;
+                    listWindow.Show();
+                }
             }
             catch (Exception ex)
             {
@@ -140,6 +217,9 @@ namespace ConvenientText.Views
             if (_isLoaded) return;
             _isLoaded = true;
 
+            // 位置校验：防止上次拖到屏幕外
+            ClampPositionToScreen();
+
             if (!OperatingSystem.IsWindows()) return;
             var handle = this.TryGetPlatformHandle()?.Handle;
             if (handle == null || handle.Value == IntPtr.Zero) return;
@@ -147,11 +227,22 @@ namespace ConvenientText.Views
 
             try
             {
-                DwmSetWindowAttribute(_hwnd, DWMWA_NCRENDERING_POLICY, 2, 4);
+                // 1) 禁用 DWM 非客户区渲染
+                int policy = 2;
+                DwmSetWindowAttribute(_hwnd, DWMWA_NCRENDERING_POLICY, ref policy, sizeof(int));
 
-                int exStyle = GetWindowLong(_hwnd, GWL_EXSTYLE);
-                SetWindowLong(_hwnd, GWL_EXSTYLE, exStyle | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE);
+                // 2) 从 Alt+Tab 和任务栏隐藏
+                IntPtr exStyle = GetWindowLongPtr(_hwnd, GWL_EXSTYLE);
+                long style = exStyle.ToInt64();
+                style |= (WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE);
+                style &= ~WS_EX_APPWINDOW;
+                SetWindowLongPtr(_hwnd, GWL_EXSTYLE, new IntPtr(style));
 
+                // 3) 从 Win+Tab 多任务视图隐藏：设置 excluded from peek
+                int excluded = 1;
+                DwmSetWindowAttribute(_hwnd, DWMWA_EXCLUDED_FROM_PEEK, ref excluded, sizeof(int));
+
+                // 4) 置底
                 SetWindowPos(_hwnd, HWND_BOTTOM, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
             }
             catch { }
@@ -164,6 +255,9 @@ namespace ConvenientText.Views
                 try
                 {
                     SetWindowPos(_hwnd, HWND_BOTTOM, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+                    // 重新应用 peek 排除（可能被某些系统事件重置）
+                    int excluded = 1;
+                    DwmSetWindowAttribute(_hwnd, DWMWA_EXCLUDED_FROM_PEEK, ref excluded, sizeof(int));
                 }
                 catch { }
             }
@@ -243,14 +337,15 @@ namespace ConvenientText.Views
         //  Win32 P/Invoke
         // ============================================================
         [DllImport("dwmapi.dll")]
-        private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, int attrValue, int attrSize);
+        private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int attrValue, int attrSize);
         private const int DWMWA_NCRENDERING_POLICY = 2;
+        private const int DWMWA_EXCLUDED_FROM_PEEK = 12;
 
         [DllImport("user32.dll", SetLastError = true)]
-        private static extern int GetWindowLong(IntPtr hWnd, int nIndex);
+        private static extern IntPtr GetWindowLongPtr(IntPtr hWnd, int nIndex);
 
         [DllImport("user32.dll", SetLastError = true)]
-        private static extern int SetWindowLong(IntPtr hWnd, int nIndex, int dwNewLong);
+        private static extern IntPtr SetWindowLongPtr(IntPtr hWnd, int nIndex, IntPtr dwNewLong);
 
         [DllImport("user32.dll", SetLastError = true)]
         private static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
@@ -263,5 +358,6 @@ namespace ConvenientText.Views
         private const int GWL_EXSTYLE = -20;
         private const int WS_EX_TOOLWINDOW = 0x00000080;
         private const int WS_EX_NOACTIVATE = 0x08000000;
+        private const int WS_EX_APPWINDOW = 0x00040000;
     }
 }

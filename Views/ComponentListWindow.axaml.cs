@@ -1,8 +1,8 @@
 ﻿// ============================================================
 //  ComponentListWindow.axaml.cs
-//  作用：点击悬浮按钮后弹出的“选择要编辑的组件”窗口。
+//  作用：点击悬浮按钮后弹出的"选择要编辑的组件"窗口。
 //  列出主界面上的组件（没有则退回读存储），点击某项即打开
-//  对应的“编辑文本”窗口；数据变化时列表自动刷新。
+//  对应的"编辑文本"窗口；数据变化时列表自动刷新。
 // ============================================================
 
 using System;
@@ -22,6 +22,45 @@ namespace ConvenientText.Views
     {
         private readonly DataStorageService _storage;
         private List<TextDataModel> _components = new();
+
+        /// <summary>
+        /// 已打开的编辑窗口登记表：键 = 组件 ComponentId。
+        /// 同一组件重复点击时激活已有窗口而非新建。
+        /// </summary>
+        private static readonly Dictionary<string, EditTextWindow> _openEditWindows = new();
+        private static readonly object _editWindowsLock = new();
+
+        /// <summary>
+        /// 打开或激活该组件的编辑窗口（全局去重）。
+        /// 从悬浮按钮列表或组件本体点击都会调用这个方法。
+        /// </summary>
+        public static void OpenOrActivateEditWindow(TextDataModel model, Window? owner = null)
+        {
+            var key = model.ComponentId;
+            lock (_editWindowsLock)
+            {
+                if (_openEditWindows.TryGetValue(key, out var existing) && existing.IsVisible)
+                {
+                    existing.Activate();
+                    return;
+                }
+
+                var editWindow = new EditTextWindow(model);
+                editWindow.WindowStartupLocation = owner != null
+                    ? WindowStartupLocation.CenterOwner
+                    : WindowStartupLocation.CenterScreen;
+                editWindow.Closed += (_, _) =>
+                {
+                    lock (_editWindowsLock) { _openEditWindows.Remove(key); }
+                };
+                _openEditWindows[key] = editWindow;
+
+                if (owner != null)
+                    editWindow.Show(owner);
+                else
+                    editWindow.Show();
+            }
+        }
 
         public ComponentListWindow()
         {
@@ -45,19 +84,16 @@ namespace ConvenientText.Views
         }
 
         /// <summary>
-        /// 【修复】优先列出“真正加载在主界面上的组件”，
-        /// 避免旧版把已删除组件的残留数据也列出来。
+        /// 【修复】线程安全地列出"真正加载在主界面上的组件"。
+        /// 使用 GetLiveModelsSnapshot() 避免枚举期间 LiveModels 被修改。
         /// </summary>
         private void LoadComponents()
         {
-            var live = ConvenientTextComponent.LiveModels;
+            var snapshot = ConvenientTextComponent.GetLiveModelsSnapshot();
 
-            if (live.Count > 0)
+            if (snapshot.Count > 0)
             {
-                _components = live.Values
-                    .Where(m => m.IsValid)
-                    .OrderBy(m => m.OrderIndex)
-                    .ToList();
+                _components = snapshot;
             }
             else
             {
@@ -109,9 +145,7 @@ namespace ConvenientText.Views
 
         private void OpenEditWindow(TextDataModel model)
         {
-            var editWindow = new EditTextWindow(model);
-            editWindow.WindowStartupLocation = WindowStartupLocation.CenterOwner;
-            editWindow.Show(this);
+            OpenOrActivateEditWindow(model, this);
         }
 
         private void OnCloseClick(object? sender, RoutedEventArgs e)

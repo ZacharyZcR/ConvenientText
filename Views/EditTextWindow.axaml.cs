@@ -1,6 +1,6 @@
 ﻿// ============================================================
 //  EditTextWindow.axaml.cs
-//  作用：“编辑文本”弹窗的交互逻辑。
+//  作用："编辑文本"弹窗的交互逻辑。
 //  提供：文字输入、颜色选择、字号滑块、预设加载。
 //  点确定后：先改传入的模型本体（界面立即刷新），再统一从
 //  共享存储读出最新字典、写入本组件克隆体、整体保存。
@@ -125,14 +125,46 @@ namespace ConvenientText.Views
 
         private void OnConfirmClick(object? sender, RoutedEventArgs e)
         {
+            // 【修复】先检查这个组件还在不在存储里。
+            // 如果用户在编辑窗开着的时候从设置页删了组件，这里不能复活它。
+            try
+            {
+                var all = _storage.LoadAll();
+                if (!all.TryGetValue(_dataModel.ComponentId, out var existing) || !existing.IsValid)
+                {
+                    var dialog = new Window
+                    {
+                        Title = "提示",
+                        Width = 320,
+                        Height = 150,
+                        WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                        Content = new StackPanel
+                        {
+                            Margin = new Thickness(20),
+                            Spacing = 15,
+                            Children =
+                            {
+                                new TextBlock { Text = "该组件已被删除，保存无效。", TextWrapping = TextWrapping.Wrap },
+                                new AvaloniaButton { Content = "确定", HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center, Width = 80 }
+                            }
+                        }
+                    };
+                    var okBtn = (AvaloniaButton)((StackPanel)dialog.Content).Children[1];
+                    okBtn.Click += (_, _) => dialog.Close();
+                    _ = dialog.ShowDialog(this);
+                    this.Close();
+                    return;
+                }
+            }
+            catch { }
+
             // 1. 先改传入的模型本体（如果是主界面组件的 Settings，界面会立即刷新）
             _dataModel.DisplayText = _inputBox.Text ?? "";
             _dataModel.TextColor = _colorPicker.Color;
             _dataModel.FontSize = _fontSizeSlider.Value;
 
-            // 2. 【修复】统一从磁盘读出最新字典，写入本组件的克隆体后整体保存。
-            //    保存会触发 DataChanged，其它窗口/组件自动同步，不会再出现
-            //    “改了没反应”的双数据不同步问题。
+            // 2. 统一从磁盘读出最新字典，写入本组件的克隆体后整体保存。
+            //    保存会触发 DataChanged，其它窗口/组件自动同步。
             try
             {
                 var all = _storage.LoadAll();

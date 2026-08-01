@@ -1,6 +1,6 @@
 ﻿// ============================================================
 //  ConvenientTextComponent.axaml.cs
-//  作用：显示在 ClassIsland 主界面上的“便捷文本”组件本体。
+//  作用：显示在 ClassIsland 主界面上的"便捷文本"组件本体。
 //  界面是代码动态创建的（圆点 + 文字），没有对应的 .axaml 文件。
 //
 //  职责：
@@ -8,7 +8,7 @@
 //    2. 把组件设置注册进共享存储（data.json）；
 //    3. 监听存储变化并同步显示（别的窗口改了这里跟着变）；
 //    4. 根据时间段自动显示/隐藏内容；
-//    5. 左键点击弹出“编辑文本”窗口。
+//    5. 左键点击弹出"编辑文本"窗口。
 //
 //  注意：组件自己的 Settings（由 ClassIsland 保存）是显示的
 //  权威数据源，data.json 是各窗口共享的副本，两者通过
@@ -57,13 +57,51 @@ namespace ConvenientText.Components
         // ============================================================
         //  【修复】当前真正加载在主界面上的组件登记表
         //  旧版用静态事件 ComponentListChanged 互相通知，处理函数里又
-        //  重新触发该事件，形成指数级事件风暴，导致“添加组件 CI 直接
-        //  原地爆炸”。现在改为：只在组件加载/卸载时各广播一次，且
+        //  重新触发该事件，形成指数级事件风暴，导致"添加组件 CI 直接
+        //  原地爆炸"。现在改为：只在组件加载/卸载时各广播一次，且
         //  广播内容里绝不再触发自身。
         // ============================================================
         private static readonly Dictionary<string, TextDataModel> _liveModels = new();
+        private static readonly object _liveModelsLock = new();
         public static IReadOnlyDictionary<string, TextDataModel> LiveModels => _liveModels;
         public static event EventHandler? LiveModelsChanged;
+
+        /// <summary>
+        /// 线程安全地尝试把组件登记到已加载表。
+        /// 返回 true 表示登记成功，false 表示已满（返回时已锁释放）。
+        /// </summary>
+        private static bool TryRegisterLiveModel(string componentId, TextDataModel model)
+        {
+            lock (_liveModelsLock)
+            {
+                int liveValidCount = _liveModels.Values.Count(m => m.IsValid);
+                if (liveValidCount >= DataStorageService.MAX_COMPONENTS)
+                    return false;
+                _liveModels[componentId] = model;
+                return true;
+            }
+        }
+
+        /// <summary>线程安全地从已加载表移除组件</summary>
+        private static void RemoveLiveModel(string componentId)
+        {
+            lock (_liveModelsLock)
+            {
+                _liveModels.Remove(componentId);
+            }
+        }
+
+        /// <summary>线程安全的 LiveModels 快照（避免枚举时集合被修改）</summary>
+        public static List<TextDataModel> GetLiveModelsSnapshot()
+        {
+            lock (_liveModelsLock)
+            {
+                return _liveModels.Values
+                    .Where(m => m.IsValid)
+                    .OrderBy(m => m.OrderIndex)
+                    .ToList();
+            }
+        }
 
         /// <summary>
         /// 构造函数：用代码搭建组件界面（圆点 + 文字 的横向排列）。
@@ -89,7 +127,7 @@ namespace ConvenientText.Components
                 VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
             };
 
-            // 正文文字（初始显示“加载中”，OnLoaded 后换成真实内容）
+            // 正文文字（初始显示"加载中"，OnLoaded 后换成真实内容）
             _textBlock = new AvaloniaTextBlock
             {
                 Text = "加载中...",
@@ -120,9 +158,7 @@ namespace ConvenientText.Components
             // 【修复】只响应左键，避免右键/拖拽时误触
             if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed) return;
 
-            var editWindow = new EditTextWindow(_dataModel);
-            editWindow.WindowStartupLocation = WindowStartupLocation.CenterScreen;
-            editWindow.Show();
+            ComponentListWindow.OpenOrActivateEditWindow(_dataModel);
         }
 
         private void OnLoaded(object? sender, RoutedEventArgs e)
@@ -144,37 +180,43 @@ namespace ConvenientText.Components
             if (string.IsNullOrEmpty(_dataModel.ComponentId))
             {
                 // ===== 这是一个新添加的组件，还没有身份 =====
-                int liveValidCount = _liveModels.Values.Count(m => m.IsValid);
-                if (liveValidCount >= DataStorageService.MAX_COMPONENTS)
+                // 【修复】先分配身份再原子登记，消除 TOCTOU 竞争
+                _dataModel.ComponentId = Guid.NewGuid().ToString();
+                _dataModel.OrderIndex = NextOrderIndex();
+                _dataModel.DotColor = _storage.GetNextColor(BuildColorContext());
+                _dataModel.IsValid = true;
+
+                if (!TryRegisterLiveModel(_dataModel.ComponentId, _dataModel))
                 {
-                    // 超过上限：只显示提示，不写存储、不订阅事件
+                    // 注册失败 = 已满，按溢出处理
                     _isOverflow = true;
                     ShowOverflowUI();
                     return;
                 }
 
-                // 【修复】给它分配稳定的 ComponentId，旧版这里是空字符串，
-                // 导致所有组件共用同一个 "" 键互相覆盖数据。
-                _dataModel.ComponentId = Guid.NewGuid().ToString();
-                _dataModel.OrderIndex = NextOrderIndex();
-                _dataModel.DotColor = _storage.GetNextColor(BuildColorContext());
-                _dataModel.IsValid = true;
                 RegisterToStorage();
             }
             else
             {
                 // ===== 已有身份的组件（重启后恢复）=====
+                if (!TryRegisterLiveModel(_dataModel.ComponentId, _dataModel))
+                {
+                    _isOverflow = true;
+                    ShowOverflowUI();
+                    return;
+                }
+
                 var all = _storage.LoadAll();
                 if (all.TryGetValue(_dataModel.ComponentId, out var stored))
                 {
                     if (!stored.IsValid)
                     {
-                        // 存储里被标记为无效（比如超出上限的历史数据），按溢出处理
+                        // 存储里被标记为无效，按溢出处理
                         _isOverflow = true;
                         ShowOverflowUI();
                         return;
                     }
-                    // 以共享存储为准同步一次（其它窗口可能在我们没加载时改过）
+                    // 以共享存储为准同步一次
                     _dataModel.CopyFrom(stored);
                 }
                 else
@@ -183,8 +225,7 @@ namespace ConvenientText.Components
                 }
             }
 
-            // 登记到“已加载组件”表，供悬浮按钮和设置页感知真实组件列表
-            _liveModels[_dataModel.ComponentId] = _dataModel;
+            // 登记完成后广播，通知设置页/悬浮按钮刷新
             LiveModelsChanged?.Invoke(null, EventArgs.Empty);
 
             _dataModel.PropertyChanged += OnDataModelPropertyChanged;
@@ -203,7 +244,7 @@ namespace ConvenientText.Components
                 _dataModel.PropertyChanged -= OnDataModelPropertyChanged;
                 if (!string.IsNullOrEmpty(_dataModel.ComponentId))
                 {
-                    _liveModels.Remove(_dataModel.ComponentId);
+                    RemoveLiveModel(_dataModel.ComponentId);
                     LiveModelsChanged?.Invoke(null, EventArgs.Empty);
                 }
             }
@@ -292,7 +333,7 @@ namespace ConvenientText.Components
 
             // 【关键修复】绝不能设置 this.IsVisible（组件控件本身的可见性）！
             // ClassIsland 的组件容器对控件可见性变化很敏感，隐藏组件控件会
-            // 触发“卸载→重新加载→再次隐藏”的死循环，直接把界面线程卡死
+            // 触发"卸载→重新加载→再次隐藏"的死循环，直接把界面线程卡死
             // （未响应）。改为只隐藏组件内部的内容面板，组件外壳保持原样。
             var currentTime = _timeRangeService?.NowTimeOfDay ?? DateTime.Now.TimeOfDay;
             bool shouldShow = _dataModel.IsInTimeRange(currentTime);
@@ -332,7 +373,7 @@ namespace ConvenientText.Components
         }
 
         /// <summary>
-        /// 汇总“已加载组件 + 存储中的组件”，用于分配不重复的颜色
+        /// 汇总"已加载组件 + 存储中的组件"，用于分配不重复的颜色
         /// </summary>
         private Dictionary<string, TextDataModel> BuildColorContext()
         {

@@ -54,7 +54,7 @@
 		<Separator Margin="0,4,0,4" />
 
 		<Expander Header="时间段显示控制"
-                  IsExpanded="False">
+                  IsExpanded="True">
 			<StackPanel Spacing="8" Margin="0,8,0,0">
 				<CheckBox Content="启用时间段限制"
                           IsChecked="{Binding EnableTimeRange}" />
@@ -71,13 +71,5 @@
                            Foreground="{DynamicResource SystemControlDisabledChromeDisabledBrush}" />
 			</StackPanel>
 		</Expander>
-
-		<CheckBox Content="启用该组件的悬浮按钮"
-                  IsChecked="{Binding IsFloatingButtonEnabled}" />
-
-		<TextBlock Text="提示：悬浮按钮的全局可见性还取决于主界面是否加载了该组件"
-                   FontSize="11"
-                   Foreground="{DynamicResource SystemControlDisabledChromeDisabledBrush}"
-                   TextWrapping="Wrap" />
 	</StackPanel>
 </UserControl>

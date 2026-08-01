@@ -38,6 +38,9 @@ namespace ConvenientText.Services
         /// </summary>
         private readonly DataStorageService _storage;
 
+        /// <summary>防止短时间内重复弹窗</summary>
+        private bool _notificationShowing = false;
+
         /// <summary>
         /// 构造函数。参数由依赖注入自动传入（见 Plugin.cs：
         /// services.AddHostedService&lt;UsbDetectionService&gt;()）。
@@ -106,17 +109,29 @@ namespace ConvenientText.Services
                 return;
             }
 
-            // 切到 UI 线程弹窗（Avalonia 的窗口只能在 UI 线程操作）
+            // 【修复】已有窗口在显示时不再弹新窗，避免快速插拔堆叠
+            if (_notificationShowing)
+            {
+                Console.WriteLine("[ConvenientText] USB notification already showing, skipped.");
+                return;
+            }
+
             Dispatcher.UIThread.Post(() =>
             {
                 try
                 {
+                    _notificationShowing = true;
                     Console.WriteLine("[ConvenientText] USB drive detected.");
                     var notificationWindow = new UsbNotificationWindow();
+                    notificationWindow.Closed += (_, _) =>
+                    {
+                        _notificationShowing = false;
+                    };
                     notificationWindow.Show();
                 }
                 catch (Exception ex)
                 {
+                    _notificationShowing = false;
                     Console.WriteLine($"[ConvenientText] Error showing USB notification: {ex.Message}");
                 }
             });

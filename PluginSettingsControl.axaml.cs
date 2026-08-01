@@ -5,9 +5,9 @@
 //    1. 预设管理卡片：维护全局预设文本库（增/删）；
 //    2. 已添加的组件卡片：列出主界面上的组件和残留数据，
 //       点组件开详情设置，点 ✕ 删除残留；
-//    3. 详情设置卡片：改文字/颜色/字号/时间段/悬浮按钮开关，
-//       任何修改都实时自动保存；
-//    4. U盘提醒卡片：ToggleSwitch 控制弹窗提醒。
+//    3. 详情设置卡片：改文字/颜色/字号/时间段，任何修改实时自动保存；
+//    4. 悬浮按钮卡片：全局开关，控制桌面悬浮按钮的显隐；
+//    5. U盘提醒卡片：ToggleSwitch 控制弹窗提醒。
 // ============================================================
 
 using System;
@@ -63,6 +63,7 @@ namespace ConvenientText
             RefreshComponentList();
             LoadPresets();
             InitUsbToggle();
+            InitFloatingButtonToggle();
 
             var listBox = this.FindControl<AvaloniaListBox>("ComponentListBox");
             if (listBox != null)
@@ -117,10 +118,8 @@ namespace ConvenientText
             var components = new List<TextDataModel>();
             var seen = new HashSet<string>();
 
-            // 1) 主界面上正在运行的组件
-            var live = ConvenientTextComponent.LiveModels.Values
-                .Where(m => m.IsValid)
-                .OrderBy(m => m.OrderIndex);
+            // 1) 主界面上正在运行的组件（线程安全快照）
+            var live = ConvenientTextComponent.GetLiveModelsSnapshot();
             foreach (var m in live)
             {
                 components.Add(m);
@@ -319,10 +318,38 @@ namespace ConvenientText
         }
 
         // ============================================================
+        //  悬浮按钮全局开关
+        // ============================================================
+
+        private void InitFloatingButtonToggle()
+        {
+            if (_storage == null) return;
+
+            var toggle = this.FindControl<ToggleSwitch>("FloatingButtonToggle");
+            if (toggle == null) return;
+
+            if (_floatingButtonToggleInitialized)
+            {
+                toggle.IsChecked = _storage.GlobalFloatingButtonEnabled;
+                return;
+            }
+            _floatingButtonToggleInitialized = true;
+
+            toggle.IsChecked = _storage.GlobalFloatingButtonEnabled;
+
+            toggle.IsCheckedChanged += (_, _) =>
+            {
+                if (_storage == null) return;
+                _storage.GlobalFloatingButtonEnabled = toggle.IsChecked ?? true;
+            };
+        }
+
+        // ============================================================
         //  U盘提醒开关
         // ============================================================
 
         private bool _usbToggleInitialized = false;
+        private bool _floatingButtonToggleInitialized = false;
 
         private void InitUsbToggle()
         {
@@ -400,7 +427,26 @@ namespace ConvenientText
 
             var presetListBox = this.FindControl<AvaloniaListBox>("PresetListBox");
             if (presetListBox != null)
+            {
                 presetListBox.ItemsSource = _presets;
+                // 【新增】双击预设可以编辑
+                presetListBox.DoubleTapped += OnPresetDoubleTapped;
+            }
+        }
+
+        private void OnPresetDoubleTapped(object? sender, RoutedEventArgs e)
+        {
+            var listBox = sender as AvaloniaListBox;
+            if (listBox?.SelectedItem is not string preset) return;
+
+            var input = this.FindControl<AvaloniaTextBox>("NewPresetInput");
+            if (input != null)
+            {
+                // 把旧文本放进输入框，同时从列表里删掉
+                input.Text = preset;
+                _presets.Remove(preset);
+                SavePresets();
+            }
         }
 
         private void OnAddPresetClick(object? sender, RoutedEventArgs e)
