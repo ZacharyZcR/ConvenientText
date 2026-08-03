@@ -1,11 +1,39 @@
+# ============================================================
+#  manifest.yml
+#  作用：ClassIsland 插件的元信息（身份/版本/入口等）。
+#  ClassIsland 加载插件时首先读取此文件，根据其中的信息
+#  找到入口程序集并调用 Plugin.Initialize()。
+# ============================================================
+
+# 插件唯一标识符（与其他插件不重复）
 id: ConvenientText
+
+# 插件显示名称（在 ClassIsland 设置界面中显示）
 name: 便捷文本插件
-description: 一个更好的 Classisland 文本编辑组件
+
+# 插件功能描述
+description: 一款更好的 Classisland 快捷文本编辑组件
+
+# 入口程序集文件名（不含路径，ClassIsland 会在插件目录下找）
 entranceAssembly: "ConvenientText.dll"
+
+# 插件项目主页/源码地址
 url: https://github.com/Tiny-Nick/ConvenientText
-version: 1.2.1.0
+
+# 当前版本号（major.minor.build.revision）
+version: 1.2.2.0
+
+# 目标 ClassIsland API 版本（插件最低要求的 API 版本）
 apiVersion: 2.0.0.0
+
+# 作者署名
 author: Tiny-Nick
+
+# GitHub 仓库所有者（用于自动更新检查）
 repoOwner: Tiny-Nick
+
+# GitHub 仓库名称（用于自动更新检查）
 repoName: ConvenientText
+
+# 发布资源根路径（GitHub Release 中的目录前缀）
 assetsRoot: main/

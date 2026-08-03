@@ -55,72 +55,30 @@
 						<TextBlock Text="📋" FontSize="18" VerticalAlignment="Center" />
 						<StackPanel VerticalAlignment="Center">
 							<TextBlock Text="预设管理" FontWeight="SemiBold" FontSize="15" />
-							<TextBlock Text="全局预设库，编辑文本时可以一键加载"
+							<TextBlock Text="全局预设库，支持按分类分组管理。编辑文本时可以一键加载"
                                        FontSize="12"
                                        Foreground="{DynamicResource SystemControlDisabledChromeDisabledBrush}" />
 						</StackPanel>
 					</StackPanel>
 
-					<ListBox x:Name="PresetListBox"
-                             MaxHeight="160"
-                             Background="Transparent"
-                             BorderThickness="0">
-						<ListBox.ItemTemplate>
-							<DataTemplate>
-								<Border CornerRadius="6"
-                                        Padding="10,6"
-                                        Margin="0,2">
-									<Border.Styles>
-										<Style Selector="Border:pointerover">
-											<Setter Property="Background" Value="{DynamicResource SystemControlBackgroundChromeHighBrush}" />
-										</Style>
-									</Border.Styles>
-									<Grid>
-										<Grid.ColumnDefinitions>
-											<ColumnDefinition Width="*" />
-											<ColumnDefinition Width="Auto" />
-										</Grid.ColumnDefinitions>
-										<TextBlock Grid.Column="0"
-                                                   Text="{Binding}"
-                                                   VerticalAlignment="Center"
-                                                   TextTrimming="CharacterEllipsis" />
-										<Button Grid.Column="1"
-                                                Content="✕"
-                                                FontSize="13"
-                                                Width="26"
-                                                Height="26"
-                                                Padding="0"
-                                                CornerRadius="4"
-                                                Background="Transparent"
-                                                BorderThickness="0"
-                                                Foreground="{DynamicResource SystemControlBaseHighBrush}"
-                                                VerticalAlignment="Center"
-                                                Click="OnDeletePresetClick"
-                                                Tag="{Binding}">
-											<Button.Styles>
-												<Style Selector="Button:pointerover">
-													<Setter Property="Background" Value="#E81123" />
-													<Setter Property="Foreground" Value="White" />
-												</Style>
-											</Button.Styles>
-										</Button>
-									</Grid>
-								</Border>
-							</DataTemplate>
-						</ListBox.ItemTemplate>
-					</ListBox>
+					<!-- 预设列表：按分类分组显示 -->
+					<ScrollViewer MaxHeight="200" HorizontalScrollBarVisibility="Disabled">
+						<StackPanel x:Name="PresetGroupPanel" Spacing="4" />
+					</ScrollViewer>
 
-					<Grid>
-						<Grid.ColumnDefinitions>
-							<ColumnDefinition Width="*" />
-							<ColumnDefinition Width="Auto" />
-						</Grid.ColumnDefinitions>
+					<!-- 【新增】分类 + 文本输入 + 添加按钮 -->
+					<Grid ColumnDefinitions="145,*,Auto">
+						<TextBox x:Name="NewPresetCategoryInput"
+                                 Grid.Column="0"
+                                 Watermark="分类 (选填)"
+                                 Margin="0,0,6,0" />
 						<TextBox x:Name="NewPresetInput"
-                                 Watermark="输入新的预设文本..." />
-						<Button Grid.Column="1"
+                                 Grid.Column="1"
+                                 Watermark="输入新的预设文本..."
+                                 Margin="0,0,8,0" />
+						<Button Grid.Column="2"
                                 Content="添加预设"
                                 Classes="Accent"
-                                Margin="8,0,0,0"
                                 Click="OnAddPresetClick" />
 					</Grid>
 				</StackPanel>
@@ -195,7 +153,7 @@
                                                 CornerRadius="4"
                                                 Background="Transparent"
                                                 BorderThickness="0"
-                                                Foreground="{DynamicResource SystemControlBaseHighBrush}"
+                                                Foreground="#CCFFFFFF"
                                                 VerticalAlignment="Center"
                                                 Click="OnDeleteComponentClick"
                                                 Tag="{Binding Model.ComponentId}">

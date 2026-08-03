@@ -1,9 +1,23 @@
+<!--
+  ============================================================
+  PresetSelectWindow.axaml
+  作用："选择预设文本"弹窗界面。
+  展示全局预设库中的所有预设文本（按分类分组），
+  用户点击某条预设后，文本通过 SelectedPresetText 属性返回。
+  
+  窗口特性：
+    - 亚克力模糊无边框窗口
+    - 自定义标题栏（拖动 + 关闭）
+    - 按分类分组显示的预设列表
+    - 底部取消按钮
+  ============================================================
+-->
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="ConvenientText.Views.PresetSelectWindow"
         Title="选择预设"
-        Width="400"
-        Height="360"
+        Width="420"
+        Height="400"
         CanResize="False"
         WindowStartupLocation="CenterOwner"
         Topmost="False"
@@ -12,6 +26,7 @@
         ExtendClientAreaTitleBarHeightHint="-1"
         TransparencyLevelHint="AcrylicBlur"
         Background="Transparent">
+	<!-- 外层圆角边框：磨砂玻璃背景 -->
 	<Border CornerRadius="12"
             Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}"
             Padding="16,10,16,16">
@@ -22,7 +37,7 @@
 				<RowDefinition Height="Auto" />
 			</Grid.RowDefinitions>
 
-			<!-- 自定义标题栏（随窗口一起亚克力） -->
+			<!-- 自定义标题栏 -->
 			<Grid x:Name="TitleBar" Grid.Row="0" Margin="0,0,0,12">
 				<Grid.ColumnDefinitions>
 					<ColumnDefinition Width="*" />
@@ -42,7 +57,7 @@
                         CornerRadius="4"
                         Background="Transparent"
                         BorderThickness="0"
-                        Foreground="{DynamicResource SystemControlBaseHighBrush}">
+                        Foreground="#CCFFFFFF">
 					<Button.Styles>
 						<Style Selector="Button:pointerover">
 							<Setter Property="Background" Value="#E81123" />
@@ -52,52 +67,12 @@
 				</Button>
 			</Grid>
 
-			<ListBox x:Name="PresetListBox"
-                     Grid.Row="1"
-                     Background="Transparent"
-                     BorderThickness="0"
-                     SelectionMode="Single">
-				<ListBox.ItemTemplate>
-					<DataTemplate>
-						<Border CornerRadius="6"
-                                Padding="10,8"
-                                Margin="0,2">
-							<Border.Styles>
-								<Style Selector="Border:pointerover">
-									<Setter Property="Background" Value="{DynamicResource SystemControlBackgroundChromeMediumBrush}" />
-								</Style>
-							</Border.Styles>
-							<Grid>
-								<Grid.ColumnDefinitions>
-									<ColumnDefinition Width="*" />
-									<ColumnDefinition Width="Auto" />
-								</Grid.ColumnDefinitions>
+			<!-- 预设列表：按分类分组 -->
+			<ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+				<StackPanel x:Name="PresetGroupPanel" Spacing="2" />
+			</ScrollViewer>
 
-								<TextBlock Grid.Column="0"
-                                           Text="{Binding}"
-                                           FontSize="14"
-                                           TextTrimming="CharacterEllipsis" />
-
-								<TextBlock Grid.Column="1"
-                                           Text="▶"
-                                           FontSize="12"
-                                           Opacity="0.3"
-                                           Margin="10,0,0,0"
-                                           VerticalAlignment="Center" />
-							</Grid>
-						</Border>
-					</DataTemplate>
-				</ListBox.ItemTemplate>
-			</ListBox>
-
-			<TextBlock x:Name="EmptyHint"
-                       Grid.Row="1"
-                       Text="暂无预设，请到插件设置中添加"
-                       Foreground="{DynamicResource SystemControlDisabledChromeDisabledBrush}"
-                       HorizontalAlignment="Center"
-                       VerticalAlignment="Center"
-                       IsVisible="False" />
-
+			<!-- 底部按钮栏 -->
 			<StackPanel Grid.Row="2"
                         Orientation="Horizontal"
                         HorizontalAlignment="Right"

@@ -1,3 +1,16 @@
+<!--
+  ============================================================
+  EditTextWindow.axaml
+  作用："编辑文本"弹窗界面。
+  提供便捷文本的快速编辑功能：修改文字、更换颜色、调整字号、加载预设。
+  
+  窗口特性：
+    - 亚克力模糊无边框窗口（AcrylicBlur + NoChrome）
+    - 自定义标题栏（TitleBar + TitleBarCloseButton）
+    - 文字输入框 + 颜色选择器 + 字号滑块 + 预设加载按钮
+    - 底部确定/取消按钮
+  ============================================================
+-->
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="ConvenientText.Views.EditTextWindow"
@@ -12,16 +25,27 @@
         ExtendClientAreaTitleBarHeightHint="-1"
         TransparencyLevelHint="AcrylicBlur"
         Background="Transparent">
+	<!--
+      外层圆角边框：提供 12px 圆角 + 磨砂玻璃背景。
+    -->
 	<Border CornerRadius="12"
             Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}"
             Padding="16,10,16,16">
 		<Grid>
+			<!--
+            两行布局：
+            - 第 0 行：自定义标题栏（拖动区域 + 关闭按钮）
+            - 第 1 行：编辑区域（输入框 + 控件栏 + 确定/取消按钮）
+          -->
 			<Grid.RowDefinitions>
 				<RowDefinition Height="Auto" />
 				<RowDefinition Height="*" />
 			</Grid.RowDefinitions>
 
-			<!-- 自定义标题栏（随窗口一起亚克力） -->
+			<!--
+            ===== 自定义标题栏 =====
+            自绘标题栏，支持拖动窗口。右侧关闭按钮（✕），悬停变红。
+          -->
 			<Grid x:Name="TitleBar" Grid.Row="0" Margin="0,0,0,12">
 				<Grid.ColumnDefinitions>
 					<ColumnDefinition Width="*" />
@@ -41,7 +65,7 @@
                         CornerRadius="4"
                         Background="Transparent"
                         BorderThickness="0"
-                        Foreground="{DynamicResource SystemControlBaseHighBrush}">
+                        Foreground="#CCFFFFFF">
 					<Button.Styles>
 						<Style Selector="Button:pointerover">
 							<Setter Property="Background" Value="#E81123" />
@@ -51,13 +75,26 @@
 				</Button>
 			</Grid>
 
+			<!--
+            ===== 编辑区域 =====
+            分为两行：
+            - 第 0 行：DockPanel 工具栏（预设按钮 + 颜色选择器 + 字号滑块 + 输入框）
+            - 第 1 行：确定/取消按钮
+          -->
 			<Grid Grid.Row="1">
 				<Grid.RowDefinitions>
 					<RowDefinition Height="Auto" />
 					<RowDefinition Height="Auto" />
 				</Grid.RowDefinitions>
 
+				<!--
+                DockPanel 实现左中右三区布局：
+                - 左侧（Dock.Left）：📋 加载预设按钮
+                - 右侧（Dock.Right，两个区域）：颜色选择器 + 字号滑块
+                - 中间（LastChildFill）：文字输入框，自动撑满剩余空间
+              -->
 				<DockPanel Grid.Row="0" LastChildFill="True" Margin="0,0,0,15">
+					<!-- 右侧区域：字号滑块（10~48px，步进 2px）+ 数值标签 -->
 					<StackPanel DockPanel.Dock="Right"
                             Orientation="Horizontal"
                             Spacing="5"
@@ -73,6 +110,7 @@
 						<TextBlock x:Name="SizeLabel" Text="18" Width="25" VerticalAlignment="Center" />
 					</StackPanel>
 
+					<!-- 右侧区域：颜色选择器（只显示色块，不展开色板） -->
 					<StackPanel DockPanel.Dock="Right"
                             Orientation="Horizontal"
                             Spacing="5"
@@ -82,12 +120,14 @@
 						<ColorPicker x:Name="ColorPicker" Width="40" Height="30" />
 					</StackPanel>
 
+					<!-- 左侧：预设加载按钮 -->
 					<Button x:Name="PresetButton"
                         Content="📋 加载预设"
                         Width="100"
                         DockPanel.Dock="Left"
                         Margin="0,0,10,0" />
 
+					<!-- 中间：文字输入框（LastChildFill=true 自动填满） -->
 					<TextBox x:Name="InputBox"
                          Watermark="输入要显示的文字..."
                          AcceptsReturn="False"
@@ -96,6 +136,11 @@
                          Margin="0,0,10,0" />
 				</DockPanel>
 
+				<!--
+                ===== 底部按钮栏 =====
+                取消按钮：关闭窗口不保存
+                确定按钮（Accent 样式，带高亮色）：保存修改并关闭
+              -->
 				<StackPanel Grid.Row="1"
                         Orientation="Horizontal"
                         HorizontalAlignment="Right"

@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
     <AssemblyName>ConvenientText</AssemblyName>
     <RootNamespace>ConvenientText</RootNamespace>
-    <Version>1.2.1.0</Version>
+    <Version>1.2.2.0</Version>
     <!-- 编译后不自动拷贝依赖 dll，插件只需自身 dll 与 manifest -->
     <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
   </PropertyGroup>

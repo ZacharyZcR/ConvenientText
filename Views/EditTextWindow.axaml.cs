@@ -77,7 +77,7 @@ namespace ConvenientText.Views
 
         private void OnPresetButtonClick(object? sender, RoutedEventArgs e)
         {
-            // 【修复】预设从共享存储的第一个有效组件读取（预设库是全局的，
+            // 预设从共享存储的第一个有效组件读取（预设库是全局的，
             // 设置页里保存时会写入所有有效组件）
             var allData = _storage.LoadAll();
             var firstValid = allData.Values

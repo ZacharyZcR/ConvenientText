@@ -1,3 +1,16 @@
+<!--
+  ============================================================
+  ComponentListWindow.axaml
+  作用：点击悬浮按钮后弹出的"选择要编辑的组件"窗口界面。
+  
+  窗口特性：
+    - 亚克力模糊无边框窗口（AcrylicBlur + NoChrome）
+    - 自定义标题栏（TitleBar + TitleBarCloseButton）
+    - 列出所有有效组件，每行显示圆点、序号和当前文字
+    - 点击/双击选中组件后打开对应的"编辑文本"窗口
+    - 底部有关闭按钮
+  ============================================================
+-->
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:conv="clr-namespace:ConvenientText.Converters"
@@ -13,17 +26,33 @@
         ExtendClientAreaTitleBarHeightHint="-1"
         TransparencyLevelHint="AcrylicBlur"
         Background="Transparent">
+	<!--
+      外层圆角边框：提供 12px 圆角 + 磨砂玻璃背景。
+      背景使用 SystemControlBackgroundChromeMediumLowBrush，
+      在深色模式下是半透明白色，浅色模式下是半透明灰色。
+    -->
 	<Border CornerRadius="12"
             Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}"
             Padding="16,10,16,16">
 		<Grid>
+			<!--
+            三行布局：
+            - 第 0 行：自定义标题栏（拖动区域 + 关闭按钮）
+            - 第 1 行：组件列表（ListBox，占满剩余空间）
+            - 第 2 行：底部按钮栏（关闭按钮）
+          -->
 			<Grid.RowDefinitions>
 				<RowDefinition Height="Auto" />
 				<RowDefinition Height="*" />
 				<RowDefinition Height="Auto" />
 			</Grid.RowDefinitions>
 
-			<!-- 自定义标题栏（随窗口一起亚克力） -->
+			<!--
+            ===== 自定义标题栏 =====
+            由于窗口使用了 NoChrome（无系统边框），需要自绘标题栏。
+            Grid 本身注册为 TitleBar，由 AcrylicTitleBarHelper.Attach() 接上拖动功能。
+            右侧是关闭按钮（✕），悬停变红。
+          -->
 			<Grid x:Name="TitleBar" Grid.Row="0" Margin="0,0,0,12">
 				<Grid.ColumnDefinitions>
 					<ColumnDefinition Width="*" />
@@ -43,8 +72,9 @@
                         CornerRadius="4"
                         Background="Transparent"
                         BorderThickness="0"
-                        Foreground="{DynamicResource SystemControlBaseHighBrush}">
+                        Foreground="#CCFFFFFF">
 					<Button.Styles>
+						<!-- 悬停：红色背景 + 白色文字，视觉上表示"危险操作" -->
 						<Style Selector="Button:pointerover">
 							<Setter Property="Background" Value="#E81123" />
 							<Setter Property="Foreground" Value="White" />
@@ -53,6 +83,13 @@
 				</Button>
 			</Grid>
 
+			<!--
+            ===== 组件列表 =====
+            ListBox 绑定到 ComponentListWindow._components 列表。
+            每行显示：标识圆点（带颜色） + 组件序号 + 当前文字 + 右箭头。
+            圆点颜色通过 ColorToBrushConverter 从 DotColor 转换而来。
+            悬停时整行背景高亮。
+          -->
 			<ListBox x:Name="ComponentListBox"
                      Grid.Row="1"
                      Background="Transparent"
@@ -63,6 +100,7 @@
 						<Border CornerRadius="6"
                                 Padding="10,8"
                                 Margin="0,2">
+							<!-- 悬停高亮效果 -->
 							<Border.Styles>
 								<Style Selector="Border:pointerover">
 									<Setter Property="Background" Value="{DynamicResource SystemControlBackgroundChromeMediumBrush}" />
@@ -75,6 +113,7 @@
 									<ColumnDefinition Width="Auto" />
 								</Grid.ColumnDefinitions>
 
+								<!-- 标识圆点：颜色代表组件 -->
 								<TextBlock Grid.Column="0"
                                            Text="●"
                                            FontSize="18"
@@ -82,6 +121,7 @@
                                            VerticalAlignment="Center"
                                            Margin="0,0,10,0" />
 
+								<!-- 组件信息：序号 + 当前显示文字 -->
 								<StackPanel Grid.Column="1" VerticalAlignment="Center">
 									<TextBlock FontWeight="SemiBold" FontSize="14">
 										<TextBlock.Text>
@@ -96,6 +136,7 @@
                                                TextTrimming="CharacterEllipsis" />
 								</StackPanel>
 
+								<!-- 右箭头：暗示可点击进入 -->
 								<TextBlock Grid.Column="2"
                                            Text="▶"
                                            FontSize="14"
@@ -107,6 +148,10 @@
 				</ListBox.ItemTemplate>
 			</ListBox>
 
+			<!--
+            ===== 底部按钮栏 =====
+            目前只有一个"关闭"按钮。未来可扩展"新建组件"等操作。
+          -->
 			<StackPanel Grid.Row="2"
                         Orientation="Horizontal"
                         HorizontalAlignment="Right"

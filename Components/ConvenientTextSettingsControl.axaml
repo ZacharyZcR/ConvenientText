@@ -1,4 +1,19 @@
-﻿<UserControl xmlns="https://github.com/avaloniaui"
+<!--
+  ============================================================
+  ConvenientTextSettingsControl.axaml
+  作用："便捷文本"组件在 ClassIsland 组件设置里的面板界面。
+  
+  设计说明：
+    便捷文本组件的所有详细设置（文字、颜色、字号、时间段等）
+    统一放在插件设置页（PluginSettingsControl）中管理。
+    组件自己的设置面板只显示一句提示，引导用户去插件设置页操作。
+    
+    这样做的好处：
+    - 避免设置分散在两个地方，让用户困惑
+    - 插件设置页可以一览所有组件的设置，操作更集中
+  ============================================================
+-->
+<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="ConvenientText.Components.ConvenientTextSettingsControl"
              HorizontalAlignment="Stretch"
@@ -6,6 +21,7 @@
              Padding="16,12,16,16">
 	<ScrollViewer HorizontalScrollBarVisibility="Disabled"
                   VerticalScrollBarVisibility="Auto">
+		<!-- 引导提示：告诉用户去哪设置 -->
 		<TextBlock Text="此组件无需额外设置，请在插件设置中调整"
                    Margin="0"
                    TextWrapping="Wrap" />

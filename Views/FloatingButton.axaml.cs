@@ -60,8 +60,9 @@ namespace ConvenientText.Views
         private PixelPoint _windowPosOnDown;    // 按下瞬间的窗口位置
         private PixelPoint _mouseScreenOnDown;  // 按下瞬间的鼠标屏幕坐标
 
-        /// <summary>拖动阈值（像素）：按下后移动超过它才算拖动，否则算点击</summary>
-        private const double DragThreshold = 10;
+        /// <summary>拖动阈值（像素）：按下后移动超过它才算拖动，否则算点击。
+        /// 触屏上手指比鼠标精度差，稍调高阈值减少误触。</summary>
+        private const double DragThreshold = 14;
 
         public FloatingButton(TextDataModel dataModel, DataStorageService storage)
         {
@@ -69,8 +70,9 @@ namespace ConvenientText.Views
             _storage = storage;
 
             // ----- 窗口基本形态：外壳比按钮大一圈，方便拖动 -----
-            Width = 50;
-            Height = 50;
+            // 【触控优化】从 50×50 增大到 60×60，符合触屏最小 48px 推荐标准
+            Width = 60;
+            Height = 60;
             CanResize = false;
             ShowInTaskbar = false;
             WindowStartupLocation = WindowStartupLocation.Manual;
@@ -90,18 +92,21 @@ namespace ConvenientText.Views
             this.Loaded += OnLoaded!;
             this.Deactivated += OnDeactivated!;
 
+            // 【触控优化】确保触屏拖动手势能被正确识别
+            // （PointerPressed/PointerMoved/PointerReleased 在 Avalonia 中是统一的指针事件，已覆盖触屏）
+
             // ----- 新视觉：圆角小方标 + 铅笔图标 -----
             // 不是圆点，是一个带圆角的小方块，像桌面上的迷你编辑标签
             var button = new AvaloniaButton
             {
-                Content = "T", // ✏ 铅笔符号
-                FontSize = 13,
+                Content = "✎",
+                FontSize = 15,
                 Background = new SolidColorBrush(AvaloniaColor.FromArgb(220, 68, 68, 68)),
                 Foreground = AvaloniaBrushes.White,
                 BorderThickness = new Thickness(0),
-                CornerRadius = new CornerRadius(6),
-                Width = 25,
-                Height = 25,
+                CornerRadius = new CornerRadius(8),
+                Width = 30,
+                Height = 30,
                 Padding = new Thickness(0),
                 HorizontalContentAlignment = Avalonia.Layout.HorizontalAlignment.Center,
                 VerticalContentAlignment = Avalonia.Layout.VerticalAlignment.Center,
@@ -112,9 +117,9 @@ namespace ConvenientText.Views
             // 亚克力磨砂底色：比按钮大一圈的半透明圆角方块，产生模糊效果
             var backdrop = new Border
             {
-                Width = 32,
-                Height = 32,
-                CornerRadius = new CornerRadius(8),
+                Width = 38,
+                Height = 38,
+                CornerRadius = new CornerRadius(10),
                 Background = new SolidColorBrush(AvaloniaColor.FromArgb(40, 255, 255, 255)),
                 HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
                 VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center

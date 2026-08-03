@@ -1,19 +1,21 @@
 ﻿// ============================================================
 //  TextDataModel.cs
-//  作用：一个“便捷文本”组件的全部设置数据。
+//  作用：一个"便捷文本"组件的全部设置数据。
 //  包括：身份标识（ComponentId/序号/是否有效）、显示内容（文字/
 //  颜色/字号）、圆点颜色、悬浮按钮位置与开关、时间段控制、
 //  U盘提醒开关、预设文本库。
 //
 //  它继承 ObservableObject（CommunityToolkit.Mvvm），所有属性
-//  变化都会触发 PropertyChanged 事件，界面绑定和“自动保存”
+//  变化都会触发 PropertyChanged 事件，界面绑定和"自动保存"
 //  都靠这个事件驱动。
 // ============================================================
 
 using System;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Text.Json.Serialization;
 using CommunityToolkit.Mvvm.ComponentModel;
+using ConvenientText.Converters;
 
 namespace ConvenientText.Models
 {
@@ -51,7 +53,7 @@ namespace ConvenientText.Models
         private bool _enableUsbNotification = true;
 
         // ===== 预设列表 =====
-        private ObservableCollection<string> _presets = new();
+        private ObservableCollection<PresetItem> _presets = new();
 
         // ============================================================
         //  属性
@@ -141,7 +143,8 @@ namespace ConvenientText.Models
             set => SetProperty(ref _enableUsbNotification, value);
         }
 
-        public ObservableCollection<string> Presets
+        [JsonConverter(typeof(PresetCollectionConverter))]
+        public ObservableCollection<PresetItem> Presets
         {
             get => _presets;
             set => SetProperty(ref _presets, value);
@@ -187,9 +190,10 @@ namespace ConvenientText.Models
             EndTime = other.EndTime;
             EnableUsbNotification = other.EnableUsbNotification;
             // 【修复】内容相同就不替换集合。否则每次同步都会触发 Presets 变更事件，
-            // 在设置页开着详情面板时会形成“保存→同步→又保存”的无限循环（崩溃）。
+            // 在设置页开着详情面板时会形成"保存→同步→又保存"的无限循环（崩溃）。
             if (!Presets.SequenceEqual(other.Presets))
-                Presets = new ObservableCollection<string>(other.Presets);
+                Presets = new ObservableCollection<PresetItem>(
+                    other.Presets.Select(p => new PresetItem { Name = p.Name, Text = p.Text, Category = p.Category }));
         }
 
         /// <summary>
@@ -267,7 +271,8 @@ namespace ConvenientText.Models
                 StartTime = this.StartTime,
                 EndTime = this.EndTime,
                 EnableUsbNotification = this.EnableUsbNotification,
-                Presets = new ObservableCollection<string>(this.Presets)
+                Presets = new ObservableCollection<PresetItem>(
+                    this.Presets.Select(p => new PresetItem { Name = p.Name, Text = p.Text, Category = p.Category }))
             };
         }
     }

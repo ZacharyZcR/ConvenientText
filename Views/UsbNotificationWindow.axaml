@@ -1,3 +1,16 @@
+<!--
+  ============================================================
+  UsbNotificationWindow.axaml
+  作用：U盘插入时弹出的"防断头"提醒窗口界面。
+  
+  窗口特性：
+    - 亚克力模糊无边框窗口（AcrylicBlur + NoChrome）
+    - Topmost = True（始终显示在最上层，确保用户看到）
+    - 自定义标题栏（拖动 + 关闭按钮）
+    - 显示温馨提示文字，提醒用户注意黑板推拉不要损坏设备
+    - 底部确定按钮 + 10 秒自动关闭
+  ============================================================
+-->
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="ConvenientText.Views.UsbNotificationWindow"
@@ -12,17 +25,28 @@
         ExtendClientAreaTitleBarHeightHint="-1"
         TransparencyLevelHint="AcrylicBlur"
         Background="Transparent">
+    <!-- 外层圆角边框：磨砂玻璃背景 -->
     <Border CornerRadius="12"
             Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}"
             Padding="20,10,20,20">
         <Grid>
+            <!--
+            三行布局：
+            - 第 0 行：自定义标题栏（"U盘已插入" + 关闭按钮）
+            - 第 1 行：提醒内容区域（提示文字）
+            - 第 2 行：底部按钮栏（确定按钮）
+          -->
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-            <!-- 自定义标题栏（随窗口一起亚克力） -->
+            <!--
+            ===== 自定义标题栏 =====
+            标题显示"U盘已插入"，右侧关闭按钮（✕），悬停变红。
+            支持拖动窗口。
+          -->
             <Grid x:Name="TitleBar" Grid.Row="0" Margin="0,0,0,10">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
@@ -42,7 +66,7 @@
                         CornerRadius="4"
                         Background="Transparent"
                         BorderThickness="0"
-                        Foreground="{DynamicResource SystemControlBaseHighBrush}">
+                        Foreground="#CCFFFFFF">
                     <Button.Styles>
                         <Style Selector="Button:pointerover">
                             <Setter Property="Background" Value="#E81123" />
@@ -52,6 +76,12 @@
                 </Button>
             </Grid>
 
+            <!--
+            ===== 提醒内容区域 =====
+            两条提醒文字：
+            - 主提示：请注意黑板的推拉以防止U盘和白板插口的损坏（14px 加粗感）
+            - 副提示：请小心操作，避免损坏设备（12px 灰色，作为补充说明）
+          -->
             <StackPanel Grid.Row="1" VerticalAlignment="Center" Spacing="10">
                 <TextBlock Text="请注意黑板的推拉以防止U盘和白板插口的损坏"
                            FontSize="14"
@@ -63,6 +93,11 @@
                            HorizontalAlignment="Center" />
             </StackPanel>
 
+            <!--
+            ===== 底部按钮栏 =====
+            确定按钮（Accent 样式，带高亮色）：用户点击后手动关闭窗口。
+            如果不点，窗口会在 10 秒后自动关闭（UsbNotificationWindow.cs 中的定时器）。
+          -->
             <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0" Spacing="10">
                 <Button Content="确定"
                         Classes="Accent"

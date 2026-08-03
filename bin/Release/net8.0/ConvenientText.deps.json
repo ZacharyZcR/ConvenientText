@@ -6,7 +6,7 @@
   "compilationOptions": {},
   "targets": {
     ".NETCoreApp,Version=v8.0": {
-      "ConvenientText/1.2.1.0": {
+      "ConvenientText/1.2.2.0": {
         "dependencies": {
           "ClassIsland.PluginSdk": "2.1.0",
           "System.Management": "8.0.0"
@@ -1446,7 +1446,7 @@
     }
   },
   "libraries": {
-    "ConvenientText/1.2.1.0": {
+    "ConvenientText/1.2.2.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""

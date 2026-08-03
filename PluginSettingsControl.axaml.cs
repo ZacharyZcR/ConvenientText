@@ -18,6 +18,7 @@ using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using Avalonia.Media;
 using ClassIsland.Core.Abstractions.Controls;
 using ClassIsland.Core.Attributes;
 using ClassIsland.Core.Enums.SettingsWindow;
@@ -28,6 +29,7 @@ using ConvenientText.Services;
 using AvaloniaListBox = Avalonia.Controls.ListBox;
 using AvaloniaTextBox = Avalonia.Controls.TextBox;
 using AvaloniaButton = Avalonia.Controls.Button;
+using ConvenientText.Views;
 
 namespace ConvenientText
 {
@@ -39,7 +41,7 @@ namespace ConvenientText
     public partial class PluginSettingsControl : SettingsPageBase
     {
         private DataStorageService? _storage;
-        private ObservableCollection<string> _presets = new();
+        private ObservableCollection<PresetItem> _presets = new();
 
         // 当前正在详情面板里编辑的组件
         private TextDataModel? _currentDetailModel;
@@ -418,35 +420,149 @@ namespace ConvenientText
                     .Where(m => m.IsValid)
                     .OrderBy(m => m.OrderIndex)
                     .FirstOrDefault();
-                _presets = firstValid?.Presets ?? new ObservableCollection<string>();
+
+                // 【修复】必须深拷贝：_presets 必须是独立集合，绝不能直接引用
+                // 存储模型的 Presets。否则 SavePresets → SaveAll → DataChanged
+                // → CopyFrom 链路会替换存储模型上的集合，导致 _presets 指向
+                // 过期对象，RebuildPresetGroupUI 读到旧数据。
+                var source = firstValid?.Presets ?? new ObservableCollection<PresetItem>();
+                _presets = new ObservableCollection<PresetItem>(
+                    source.Select(p => new PresetItem { Name = p.Name, Text = p.Text, Category = p.Category }));
             }
             catch
             {
-                _presets = new ObservableCollection<string>();
+                _presets = new ObservableCollection<PresetItem>();
             }
 
-            var presetListBox = this.FindControl<AvaloniaListBox>("PresetListBox");
-            if (presetListBox != null)
+            RebuildPresetGroupUI();
+        }
+
+        /// <summary>
+        /// 按分类重建预设分组显示界面。
+        /// 每组一个圆角卡片，内含该类目下的所有预设条目。
+        /// </summary>
+        private void RebuildPresetGroupUI()
+        {
+            var panel = this.FindControl<StackPanel>("PresetGroupPanel");
+            if (panel == null) return;
+            panel.Children.Clear();
+
+            // 控件初始化阶段 FindResource 可能返回 UnsetValue，用 try-catch 兜底
+            IBrush hintBrush;
+            try { hintBrush = (IBrush)this.FindResource("SystemControlDisabledChromeDisabledBrush"); }
+            catch { hintBrush = Brush.Parse("#99FFFFFF"); }
+
+            if (_presets.Count == 0)
             {
-                presetListBox.ItemsSource = _presets;
-                // 【新增】双击预设可以编辑
-                presetListBox.DoubleTapped += OnPresetDoubleTapped;
+                panel.Children.Add(new TextBlock
+                {
+                    Text = "暂无预设，使用下方输入框添加",
+                    FontSize = 13,
+                    Foreground = hintBrush,
+                    HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
+                    Margin = new Thickness(0, 8)
+                });
+                return;
+            }
+
+            // 按分类分组
+            var groups = _presets
+                .GroupBy(p => string.IsNullOrWhiteSpace(p.Category) ? "未分类" : p.Category.Trim())
+                .OrderBy(g => g.Key == "未分类" ? "ZZZ" : g.Key); // 未分类排最后
+
+            foreach (var group in groups)
+            {
+                // 分类标题
+                panel.Children.Add(new TextBlock
+                {
+                    Text = $"▸ {group.Key}",
+                    FontSize = 12,
+                    FontWeight = Avalonia.Media.FontWeight.SemiBold,
+                    Foreground = hintBrush,
+                    Margin = new Thickness(0, 4, 0, 2)
+                });
+
+                // 每组内的条目
+                foreach (var item in group.OrderBy(p => p.Name))
+                {
+                    var row = new Grid
+                    {
+                        Margin = new Thickness(8, 2),
+                        ColumnDefinitions = new ColumnDefinitions("*,Auto,Auto")
+                    };
+
+                    var nameText = new TextBlock
+                    {
+                        Text = item.Name,
+                        VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
+                        TextTrimming = Avalonia.Media.TextTrimming.CharacterEllipsis,
+                        FontSize = 13
+                    };
+                    Grid.SetColumn(nameText, 0);
+                    row.Children.Add(nameText);
+
+                    // 【新增】编辑按钮
+                    var editBtn = new AvaloniaButton
+                    {
+                        Content = "✎",
+                        FontSize = 12,
+                        Width = 26,
+                        Height = 26,
+                        Padding = new Thickness(0),
+                        CornerRadius = new CornerRadius(4),
+                        Background = Brushes.Transparent,
+                        BorderThickness = new Thickness(0),
+                        Foreground = Brush.Parse("#CCFFFFFF"),
+                        VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
+                        Tag = item
+                    };
+                    editBtn.Click += OnEditPresetClick;
+                    // 悬停变红
+                    editBtn.PointerEntered += (_, _) => { editBtn.Background = Brush.Parse("#E81123"); editBtn.Foreground = Brushes.White; };
+                    editBtn.PointerExited += (_, _) => { editBtn.Background = Brushes.Transparent; editBtn.Foreground = Brush.Parse("#CCFFFFFF"); };
+                    Grid.SetColumn(editBtn, 1);
+                    row.Children.Add(editBtn);
+
+                    // 删除按钮
+                    var delBtn = new AvaloniaButton
+                    {
+                        Content = "✕",
+                        FontSize = 13,
+                        Width = 26,
+                        Height = 26,
+                        Padding = new Thickness(0),
+                        CornerRadius = new CornerRadius(4),
+                        Background = Brushes.Transparent,
+                        BorderThickness = new Thickness(0),
+                        Foreground = Brush.Parse("#CCFFFFFF"),
+                        VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
+                        Tag = item,
+                        Margin = new Thickness(2, 0, 0, 0)
+                    };
+                    delBtn.Click += OnDeletePresetClick;
+                    delBtn.PointerEntered += (_, _) => { delBtn.Background = Brush.Parse("#E81123"); delBtn.Foreground = Brushes.White; };
+                    delBtn.PointerExited += (_, _) => { delBtn.Background = Brushes.Transparent; delBtn.Foreground = Brush.Parse("#CCFFFFFF"); };
+                    Grid.SetColumn(delBtn, 2);
+                    row.Children.Add(delBtn);
+
+                    panel.Children.Add(row);
+                }
             }
         }
 
-        private void OnPresetDoubleTapped(object? sender, RoutedEventArgs e)
+        /// <summary>
+        /// 【新增】编辑预设：把内容放进输入框，然后从列表中删除。
+        /// </summary>
+        private void OnEditPresetClick(object? sender, RoutedEventArgs e)
         {
-            var listBox = sender as AvaloniaListBox;
-            if (listBox?.SelectedItem is not string preset) return;
+            if (sender is not AvaloniaButton btn || btn.Tag is not PresetItem item) return;
 
-            var input = this.FindControl<AvaloniaTextBox>("NewPresetInput");
-            if (input != null)
-            {
-                // 把旧文本放进输入框，同时从列表里删掉
-                input.Text = preset;
-                _presets.Remove(preset);
-                SavePresets();
-            }
+            var nameInput = this.FindControl<AvaloniaTextBox>("NewPresetInput");
+            var catInput = this.FindControl<AvaloniaTextBox>("NewPresetCategoryInput");
+            if (nameInput != null) nameInput.Text = item.Name;
+            if (catInput != null) catInput.Text = item.Category;
+            _presets.Remove(item);
+            SavePresets();
         }
 
         private void OnAddPresetClick(object? sender, RoutedEventArgs e)
@@ -454,19 +570,25 @@ namespace ConvenientText
             var input = this.FindControl<AvaloniaTextBox>("NewPresetInput");
             if (input == null || string.IsNullOrWhiteSpace(input.Text)) return;
 
-            var newPreset = input.Text.Trim();
-            if (!_presets.Contains(newPreset))
+            var catInput = this.FindControl<AvaloniaTextBox>("NewPresetCategoryInput");
+            var category = catInput?.Text?.Trim() ?? "";
+
+            var text = input.Text.Trim();
+            var newPreset = new PresetItem { Name = text, Text = text, Category = category };
+
+            // 避免完全重复的预设
+            if (!_presets.Any(p => p.Text == newPreset.Text && p.Category == newPreset.Category))
             {
                 _presets.Add(newPreset);
                 SavePresets();
                 input.Text = "";
+                if (catInput != null) catInput.Text = "";
             }
         }
 
         private void OnDeletePresetClick(object? sender, RoutedEventArgs e)
         {
-            var btn = sender as AvaloniaButton;
-            if (btn?.Tag is string preset)
+            if (sender is AvaloniaButton btn && btn.Tag is PresetItem preset)
             {
                 _presets.Remove(preset);
                 SavePresets();
@@ -483,11 +605,15 @@ namespace ConvenientText
                 foreach (var kv in all)
                 {
                     if (kv.Value.IsValid)
-                        kv.Value.Presets = new ObservableCollection<string>(_presets);
+                        kv.Value.Presets = new ObservableCollection<PresetItem>(
+                            _presets.Select(p => new PresetItem { Name = p.Name, Text = p.Text, Category = p.Category }));
                 }
                 _storage.SaveAll(all);
             }
             catch { }
+
+            // 刷新分组显示
+            RebuildPresetGroupUI();
         }
     }
 }

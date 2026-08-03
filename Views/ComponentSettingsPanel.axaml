@@ -1,10 +1,30 @@
-﻿<UserControl xmlns="https://github.com/avaloniaui"
+<!--
+  ============================================================
+  ComponentSettingsPanel.axaml
+  作用：设置页里"组件详细设置"卡片的界面内容面板。
+  所有控件都双向绑定到 TextDataModel，任何修改实时自动保存。
+  
+  面板内容从上到下：
+    1. 组件标题（圆点 + "组件 #N 设置"）
+    2. 文字输入框（修改显示文字）
+    3. 颜色选择器（修改文字颜色）
+    4. 字号滑块（10-48px，步进 2px）
+    5. 实时预览区（当前设置的即时效果）
+    6. 时间段控制展开面板（启用/禁用 + 开始/结束时间）
+  ============================================================
+-->
+<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:conv="clr-namespace:ConvenientText.Converters"
              x:Class="ConvenientText.Views.ComponentSettingsPanel"
              HorizontalAlignment="Stretch"
              VerticalAlignment="Stretch">
 	<StackPanel Spacing="12">
+		<!--
+          ===== 组件标题栏 =====
+          显示组件标识圆点 + "组件 #N 设置" 标题。
+          圆点颜色通过 ColorToBrushConverter 绑定到 DotColor 属性。
+        -->
 		<StackPanel Orientation="Horizontal" Spacing="10" Margin="0,0,0,4">
 			<TextBlock Text="●"
                        FontSize="22"
@@ -21,16 +41,32 @@
 			</TextBlock>
 		</StackPanel>
 
+		<!-- 分隔线 -->
 		<Separator Margin="0,0,0,4" />
 
+		<!--
+          ===== 文字输入 =====
+          TextBox 双向绑定 DisplayText 属性，输入即保存。
+          Watermark 提供占位提示文字。
+        -->
 		<TextBox Text="{Binding DisplayText}"
                  Watermark="输入要显示的文字..." />
 
+		<!--
+          ===== 文字颜色选择 =====
+          ColorPicker 双向绑定 TextColor 属性。
+          宽度设为 40 保持紧凑（只显示色块，不展开色板）。
+        -->
 		<StackPanel Orientation="Horizontal" Spacing="10">
 			<TextBlock Text="文字颜色：" VerticalAlignment="Center" />
 			<ColorPicker Color="{Binding TextColor}" Width="40" Height="30" />
 		</StackPanel>
 
+		<!--
+          ===== 字号调节 =====
+          Slider 范围 10~48px，步进 2px（TickFrequency + IsSnapToTickEnabled）。
+          右侧 TextBlock 同步显示当前字号数值。
+        -->
 		<StackPanel Orientation="Horizontal" Spacing="10">
 			<TextBlock Text="字号：" VerticalAlignment="Center" />
 			<Slider Minimum="10" Maximum="48"
@@ -42,6 +78,14 @@
 			<TextBlock Text="{Binding FontSize}" VerticalAlignment="Center" Width="25" />
 		</StackPanel>
 
+		<!--
+          ===== 实时预览区域 =====
+          以当前设置实时渲染一个预览卡片：
+          - 文字内容 = DisplayText
+          - 字号 = FontSize
+          - 文字颜色 = TextColor（经 ColorToBrushConverter 转换）
+          背景使用 SystemControlBackgroundChromeMediumBrush 形成半透明卡片效果。
+        -->
 		<Border CornerRadius="6"
                 Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}"
                 Padding="10,6">
@@ -51,8 +95,16 @@
                        TextTrimming="CharacterEllipsis" />
 		</Border>
 
+		<!-- 分隔线 -->
 		<Separator Margin="0,4,0,4" />
 
+		<!--
+          ===== 时间段显示控制 =====
+          Expander 默认展开，包含：
+          - CheckBox：启用/禁用时间段限制（绑定 EnableTimeRange）
+          - TimePicker × 2：开始时间和结束时间（绑定 StartTime / EndTime）
+          - 提示文字：说明不在时间段内组件会自动隐藏
+        -->
 		<Expander Header="时间段显示控制"
                   IsExpanded="True">
 			<StackPanel Spacing="8" Margin="0,8,0,0">
