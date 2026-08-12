@@ -1,0 +1,40 @@
+C:\Users\Programmer_Nick\OneDrive\文档\Visual Studio 18 项目文件
+└─ConvenientText - Openclaw
+    ├─.gitignore
+    ├─ConvenientText.csproj
+    ├─ConvenientText.csproj.user
+    ├─ConvenientText.slnx
+    ├─icon.png
+    ├─LICENSE
+    ├─manifest.yml
+    ├─Plugin.cs
+    ├─PluginSettingsControl.axaml
+    ├─PluginSettingsControl.axaml.cs
+    ├─README.md
+    ├─Components
+    │      ├─ConvenientTextComponent.axaml.cs
+    │      ├─ConvenientTextSettingsControl.axaml
+    │      └─ConvenientTextSettingsControl.axaml.cs
+    ├─Converters
+    │      └─ColorToBrushConverter.cs
+    ├─Models
+    │      └─TextDataModel.cs
+    ├─Properties
+    │      └─launchSettings.json
+    ├─Services
+    │      ├─DataStorageService.cs
+    │      ├─TimeRangeService.cs
+    │      └─UsbDetectionService.cs
+    └─Views
+           ├─AcrylicTitleBarHelper.cs
+           ├─ComponentListWindow.axaml
+           ├─ComponentListWindow.axaml.cs
+           ├─ComponentSettingsPanel.axaml
+           ├─ComponentSettingsPanel.axaml.cs
+           ├─EditTextWindow.axaml
+           ├─EditTextWindow.axaml.cs
+           ├─FloatingButton.axaml.cs
+           ├─PresetSelectWindow.axaml
+           ├─PresetSelectWindow.axaml.cs
+           ├─UsbNotificationWindow.axaml
+           └─UsbNotificationWindow.axaml.cs

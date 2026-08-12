@@ -45,6 +45,7 @@ namespace ConvenientText.Views
             InitializeComponent();
 
             AcrylicTitleBarHelper.Attach(this); // 接上亚克力标题栏（拖动+关闭）
+            AcrylicWindowHelper.Apply(this);    // 【1.2.2.1】按全局开关应用/取消亚克力效果
 
             _storage = Plugin.Storage ?? new DataStorageService();
             _dataModel = dataModel;
@@ -88,25 +89,9 @@ namespace ConvenientText.Views
 
             if (presets == null || presets.Count == 0)
             {
-                var dialog = new Window
-                {
-                    Title = "提示",
-                    Width = 300,
-                    Height = 150,
-                    WindowStartupLocation = WindowStartupLocation.CenterOwner,
-                    Content = new StackPanel
-                    {
-                        Margin = new Thickness(20),
-                        Spacing = 15,
-                        Children =
-                        {
-                            new TextBlock { Text = "暂无预设，请前往插件设置中添加。", TextWrapping = TextWrapping.Wrap },
-                            new AvaloniaButton { Content = "确定", HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center, Width = 80 }
-                        }
-                    }
-                };
-                var okBtn = (AvaloniaButton)((StackPanel)dialog.Content).Children[1];
-                okBtn.Click += (_, _) => dialog.Close();
+                // 【1.2.2.1】统一走亚克力提示弹窗工厂（跟随亚克力开关）
+                var dialog = AcrylicWindowHelper.CreateMessageWindow("提示", "暂无预设，请前往插件设置中添加。");
+                dialog.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 _ = dialog.ShowDialog(this);
                 return;
             }
@@ -132,25 +117,9 @@ namespace ConvenientText.Views
                 var all = _storage.LoadAll();
                 if (!all.TryGetValue(_dataModel.ComponentId, out var existing) || !existing.IsValid)
                 {
-                    var dialog = new Window
-                    {
-                        Title = "提示",
-                        Width = 320,
-                        Height = 150,
-                        WindowStartupLocation = WindowStartupLocation.CenterOwner,
-                        Content = new StackPanel
-                        {
-                            Margin = new Thickness(20),
-                            Spacing = 15,
-                            Children =
-                            {
-                                new TextBlock { Text = "该组件已被删除，保存无效。", TextWrapping = TextWrapping.Wrap },
-                                new AvaloniaButton { Content = "确定", HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center, Width = 80 }
-                            }
-                        }
-                    };
-                    var okBtn = (AvaloniaButton)((StackPanel)dialog.Content).Children[1];
-                    okBtn.Click += (_, _) => dialog.Close();
+                    // 【1.2.2.1】统一走亚克力提示弹窗工厂（跟随亚克力开关）
+                    var dialog = AcrylicWindowHelper.CreateMessageWindow("提示", "该组件已被删除，保存无效。");
+                    dialog.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                     _ = dialog.ShowDialog(this);
                     this.Close();
                     return;

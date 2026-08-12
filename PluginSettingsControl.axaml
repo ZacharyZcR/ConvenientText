@@ -229,6 +229,40 @@
 				</Grid>
 			</Border>
 
+			<!-- ===== 卡片：窗口亚克力效果 ===== -->
+			<Border CornerRadius="8"
+					Background="{DynamicResource CardBackgroundBrush}"
+					BorderBrush="{DynamicResource CardBorderBrush}"
+                    BorderThickness="1"
+                    Padding="16">
+				<Grid>
+					<Grid.ColumnDefinitions>
+						<ColumnDefinition Width="Auto" />
+						<ColumnDefinition Width="*" />
+						<ColumnDefinition Width="Auto" />
+					</Grid.ColumnDefinitions>
+					<TextBlock Text="Aa"
+                               FontSize="16"
+                               FontWeight="Bold"
+                               VerticalAlignment="Center"
+                               Margin="0,0,10,0" />
+					<StackPanel Grid.Column="1" VerticalAlignment="Center">
+						<TextBlock Text="窗口亚克力效果"
+                                   FontWeight="SemiBold"
+                                   FontSize="15" />
+						<TextBlock Text="关闭后编辑窗口、预设列表、组件列表等弹窗使用不透明背景，文字更清晰（对之后打开的窗口生效）"
+                                   FontSize="12"
+                                   Foreground="{DynamicResource SystemControlDisabledChromeDisabledBrush}"
+                                   TextWrapping="Wrap" />
+					</StackPanel>
+					<ToggleSwitch x:Name="AcrylicToggle"
+                                  Grid.Column="2"
+                                  VerticalAlignment="Center"
+                                  OnContent="开"
+                                  OffContent="关" />
+				</Grid>
+			</Border>
+
 			<!-- ===== 卡片：U盘提醒 ===== -->
 			<Border CornerRadius="8"
 					Background="{DynamicResource CardBackgroundBrush}"

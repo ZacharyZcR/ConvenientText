@@ -114,18 +114,12 @@ namespace ConvenientText
                 {
                     try
                     {
-                        RefreshDisplayModel();
-
-                        // 没有可用组件时也先创建一个占位模型，保证按钮能初始化
-                        _floatingButton = new FloatingButton(
-                            _displayModel ?? TextDataModel.CreateNew(1, Avalonia.Media.Colors.Gray),
-                            _storage);
+                        CreateFloatingButton();
 
                         _storage.DataChanged += OnDataOrComponentsChanged;
                         ConvenientTextComponent.LiveModelsChanged += OnDataOrComponentsChanged;
                         _timeRangeService.PropertyChanged += OnTimeChanged;
 
-                        _floatingButton.Show();
                         UpdateFloatingButtonVisibility();
                     }
                     catch (Exception ex)
@@ -137,12 +131,52 @@ namespace ConvenientText
                 return Task.CompletedTask;
             }
 
+            /// <summary>
+            /// 创建悬浮按钮窗口并登记关闭事件。
+            /// 窗口可能在多任务视图（Win+Tab）等场景被系统直接关闭，
+            /// 关闭时 FloatingButton 会自行关闭设置里的开关，本服务
+            /// 在这里把引用置空；用户重新打开开关时再走
+            /// OnDataOrComponentsChanged 重建。
+            /// </summary>
+            private void CreateFloatingButton()
+            {
+                RefreshDisplayModel();
+
+                // 没有可用组件时也先创建一个占位模型，保证按钮能初始化
+                _floatingButton = new FloatingButton(
+                    _displayModel ?? TextDataModel.CreateNew(1, Avalonia.Media.Colors.Gray),
+                    _storage);
+
+                // 【1.2.2.1】窗口被外部关闭（如 Win+Tab 视图里关闭）后，
+                // 立即丢弃引用，后续一律不再操作这个已销毁的窗口。
+                _floatingButton.Closed += OnFloatingButtonClosed;
+
+                _floatingButton.Show();
+            }
+
+            /// <summary>
+            /// 【1.2.2.1】悬浮按钮窗口被关闭（无论什么途径）后的清理：
+            /// 取消订阅并把引用置空，防止后续逻辑操作已销毁的窗口导致崩溃。
+            /// </summary>
+            private void OnFloatingButtonClosed(object? sender, EventArgs e)
+            {
+                if (_floatingButton == null) return;
+                _floatingButton.Closed -= OnFloatingButtonClosed;
+                _floatingButton = null;
+            }
+
             private void OnDataOrComponentsChanged(object? sender, EventArgs e)
             {
                 Dispatcher.UIThread.Post(() =>
                 {
                     try
                     {
+                        // 【1.2.2.1】按钮被外部关闭后，用户重新打开开关时重建按钮
+                        if (_floatingButton == null && _storage.GlobalFloatingButtonEnabled)
+                        {
+                            CreateFloatingButton();
+                        }
+
                         RefreshDisplayModel();
                         UpdateFloatingButtonVisibility();
                     }
@@ -196,15 +230,19 @@ namespace ConvenientText
 
             private void UpdateFloatingButtonVisibility()
             {
-                if (_floatingButton == null) return;
+                try
+                {
+                    if (_floatingButton == null) return;
 
-                bool shouldShow = _displayModel != null &&
-                                  _displayModel.IsValid &&
-                                  _storage.GlobalFloatingButtonEnabled &&
-                                  ConvenientTextComponent.LiveModels.ContainsKey(_displayModel.ComponentId) &&
-                                  _displayModel.IsInTimeRange(_timeRangeService.NowTimeOfDay);
+                    bool shouldShow = _displayModel != null &&
+                                      _displayModel.IsValid &&
+                                      _storage.GlobalFloatingButtonEnabled &&
+                                      ConvenientTextComponent.LiveModels.ContainsKey(_displayModel.ComponentId) &&
+                                      _displayModel.IsInTimeRange(_timeRangeService.NowTimeOfDay);
 
-                _floatingButton.IsVisible = shouldShow;
+                    _floatingButton.IsVisible = shouldShow;
+                }
+                catch { } // 【1.2.2.1】窗口可能已被外部关闭，操作失败时静默跳过
             }
 
             public Task StopAsync(CancellationToken cancellationToken)
@@ -220,7 +258,11 @@ namespace ConvenientText
 
                     try
                     {
-                        _floatingButton?.Close();
+                        if (_floatingButton != null)
+                        {
+                            _floatingButton.Closed -= OnFloatingButtonClosed;
+                            _floatingButton.Close();
+                        }
                     }
                     catch { }
                     _floatingButton = null;

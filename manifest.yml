@@ -21,7 +21,7 @@ entranceAssembly: "ConvenientText.dll"
 url: https://github.com/Tiny-Nick/ConvenientText
 
 # 当前版本号（major.minor.build.revision）
-version: 1.2.2.0
+version: 1.2.3.0
 
 # 目标 ClassIsland API 版本（插件最低要求的 API 版本）
 apiVersion: 2.0.0.0

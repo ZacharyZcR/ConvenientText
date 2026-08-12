@@ -66,6 +66,7 @@ namespace ConvenientText
             LoadPresets();
             InitUsbToggle();
             InitFloatingButtonToggle();
+            InitAcrylicToggle();
 
             var listBox = this.FindControl<AvaloniaListBox>("ComponentListBox");
             if (listBox != null)
@@ -289,32 +290,8 @@ namespace ConvenientText
         {
             try
             {
-                var dialog = new Window
-                {
-                    Title = "提示",
-                    Width = 340,
-                    Height = 185,
-                    CanResize = false,
-                    WindowStartupLocation = WindowStartupLocation.CenterScreen,
-                    Content = new StackPanel
-                    {
-                        Margin = new Thickness(20),
-                        Spacing = 15,
-                        Children =
-                        {
-                            new TextBlock { Text = message, TextWrapping = Avalonia.Media.TextWrapping.Wrap },
-                            new AvaloniaButton
-                            {
-                                Content = "确定",
-                                Width = 80,
-                                HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center
-                            }
-                        }
-                    }
-                };
-                var okBtn = (AvaloniaButton)((StackPanel)dialog.Content).Children[1];
-                okBtn.Click += (_, _) => dialog.Close();
-                dialog.Show();
+                // 【1.2.2.1】统一走亚克力提示弹窗工厂（跟随亚克力开关）
+                AcrylicWindowHelper.CreateMessageWindow("提示", message).Show();
             }
             catch { }
         }
@@ -352,6 +329,35 @@ namespace ConvenientText
 
         private bool _usbToggleInitialized = false;
         private bool _floatingButtonToggleInitialized = false;
+        private bool _acrylicToggleInitialized = false;
+
+        /// <summary>
+        /// 【1.2.2.1】窗口亚克力效果全局开关。
+        /// 关闭后弹窗使用不透明背景（新打开的窗口生效）。
+        /// </summary>
+        private void InitAcrylicToggle()
+        {
+            if (_storage == null) return;
+
+            var toggle = this.FindControl<ToggleSwitch>("AcrylicToggle");
+            if (toggle == null) return;
+
+            // 设置页多次打开/切换时 OnLoaded 会重复执行，只订阅一次
+            if (_acrylicToggleInitialized)
+            {
+                toggle.IsChecked = _storage.GlobalUseAcrylic;
+                return;
+            }
+            _acrylicToggleInitialized = true;
+
+            toggle.IsChecked = _storage.GlobalUseAcrylic;
+
+            toggle.IsCheckedChanged += (_, _) =>
+            {
+                if (_storage == null) return;
+                _storage.GlobalUseAcrylic = toggle.IsChecked ?? true;
+            };
+        }
 
         private void InitUsbToggle()
         {

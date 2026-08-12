@@ -35,6 +35,9 @@ namespace ConvenientText.Services
     public class GlobalSettings
     {
         public bool IsFloatingButtonEnabled { get; set; } = true;
+
+        /// <summary>窗口亚克力效果开关（1.2.2.1 新增）。关闭后弹窗使用不透明背景，可读性更好。</summary>
+        public bool UseAcrylic { get; set; } = true;
     }
 
     /// <summary>
@@ -109,6 +112,19 @@ namespace ConvenientText.Services
             {
                 if (_globalSettings.IsFloatingButtonEnabled == value) return;
                 _globalSettings.IsFloatingButtonEnabled = value;
+                SaveGlobalSettings();
+                try { DataChanged?.Invoke(this, EventArgs.Empty); } catch { }
+            }
+        }
+
+        /// <summary>窗口亚克力效果全局开关（1.2.2.1 新增）</summary>
+        public bool GlobalUseAcrylic
+        {
+            get => _globalSettings.UseAcrylic;
+            set
+            {
+                if (_globalSettings.UseAcrylic == value) return;
+                _globalSettings.UseAcrylic = value;
                 SaveGlobalSettings();
                 try { DataChanged?.Invoke(this, EventArgs.Empty); } catch { }
             }

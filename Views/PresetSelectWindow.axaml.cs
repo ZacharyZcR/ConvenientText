@@ -42,6 +42,7 @@ namespace ConvenientText.Views
             InitializeComponent();
 
             AcrylicTitleBarHelper.Attach(this);
+            AcrylicWindowHelper.Apply(this);    // 【1.2.2.1】按全局开关应用/取消亚克力效果
 
             // 控件初始化阶段 FindResource 可能返回 UnsetValue，全部用 try-catch 兜底
             IBrush hintBrush;

@@ -67,6 +67,7 @@ namespace ConvenientText.Views
             InitializeComponent();
 
             AcrylicTitleBarHelper.Attach(this);
+            AcrylicWindowHelper.Apply(this);    // 【1.2.2.1】按全局开关应用/取消亚克力效果
 
             _storage = Plugin.Storage ?? new DataStorageService();
             LoadComponents();

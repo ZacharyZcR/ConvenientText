@@ -41,6 +41,8 @@ namespace ConvenientText.Views
 
             // 接上亚克力标题栏：支持拖动窗口 + 关闭按钮
             AcrylicTitleBarHelper.Attach(this);
+            // 【1.2.2.1】按全局开关应用/取消亚克力效果
+            AcrylicWindowHelper.Apply(this);
 
             // 创建 10 秒倒计时定时器
             _autoCloseTimer = new System.Timers.Timer(10000);

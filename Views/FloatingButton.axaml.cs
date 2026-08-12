@@ -92,6 +92,11 @@ namespace ConvenientText.Views
             this.Loaded += OnLoaded!;
             this.Deactivated += OnDeactivated!;
 
+            // 【1.2.2.1】窗口被外部关闭（如 Win+Tab 多任务视图里关闭）时，
+            // 同步关闭设置里的悬浮按钮开关。宿主服务看到开关关闭后就不会
+            // 再操作这个已销毁的窗口，避免 ClassIsland 崩溃。
+            this.Closed += OnWindowClosed;
+
             // 【触控优化】确保触屏拖动手势能被正确识别
             // （PointerPressed/PointerMoved/PointerReleased 在 Avalonia 中是统一的指针事件，已覆盖触屏）
 
@@ -114,13 +119,19 @@ namespace ConvenientText.Views
             };
             _button = button;
 
+            // 【1.2.2.1】亚克力效果关闭时，磨砂底色实心化，
+            // 保证按钮在任何背景下都清晰可见。
+            bool useAcrylic = Plugin.Storage?.GlobalUseAcrylic ?? true;
+
             // 亚克力磨砂底色：比按钮大一圈的半透明圆角方块，产生模糊效果
             var backdrop = new Border
             {
                 Width = 38,
                 Height = 38,
                 CornerRadius = new CornerRadius(10),
-                Background = new SolidColorBrush(AvaloniaColor.FromArgb(40, 255, 255, 255)),
+                Background = useAcrylic
+                    ? new SolidColorBrush(AvaloniaColor.FromArgb(40, 255, 255, 255))
+                    : new SolidColorBrush(AvaloniaColor.FromArgb(235, 68, 68, 68)),
                 HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
                 VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
             };
@@ -185,6 +196,21 @@ namespace ConvenientText.Views
                 }
 
                 Position = new PixelPoint((int)x, (int)y);
+            }
+            catch { }
+        }
+
+        /// <summary>
+        /// 【1.2.2.1】窗口被关闭（包括 Win+Tab 多任务视图里被系统关闭）时，
+        /// 自动关闭设置里的悬浮按钮开关。
+        /// 效果等同于用户去设置页手动关闭"桌面悬浮按钮"，
+        /// 宿主服务收到开关变化后不会再操作已销毁的窗口，杜绝崩溃。
+        /// </summary>
+        private void OnWindowClosed(object? sender, EventArgs e)
+        {
+            try
+            {
+                _storage.GlobalFloatingButtonEnabled = false;
             }
             catch { }
         }
