@@ -16,8 +16,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: 8.0.x
           cache: true
@@ -32,9 +32,8 @@ jobs:
         run: |
           ./package.ps1 -NoBuild
           ./check-zip.ps1
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: ConvenientText
           path: artifacts/ConvenientText.cipx
           if-no-files-found: error
-
